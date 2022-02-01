@@ -159,7 +159,20 @@ class ident_switch extends rcube_plugin
 	{
 		$iid = $_SESSION['iid' . self::MY_POSTFIX];
 		if (!is_numeric($iid) || $iid == -1)
-			return $args;
+		{
+			self::write_log('no identity switch is selected... trying to find related smtp server from the from header');
+			$requestFrom = rcube_utils::get_input_value('_from', rcube_utils::INPUT_POST);
+			if (empty($requestFrom)) {
+				self::write_log('no _from post parameter found... falling back to original default config');
+				return $args;
+			} else {
+				$iid = intval($requestFrom);
+				if ($iid == 0) {
+					self::write_log('falling back to original default config as _from post field is no integer: ' . $_POST['_from']); 
+					return $args;
+				}
+			}
+		}
 
 		$rc = rcmail::get_instance();
 
@@ -179,15 +192,15 @@ class ident_switch extends rcube_plugin
 
 			$args['smtp_user'] = $r['username'];
 			$args['smtp_pass'] = $r['smtp_auth'] == self::SMTP_AUTH_IMAP ? $rc->decrypt($r['password']) : '';
-			$args['smtp_server'] = $r['smtp_host'] ? $r['smtp_host'] : 'localhost'; // Default SMTP host here
+			$args['smtp_host'] = $r['smtp_host'] ? $r['smtp_host'] : 'localhost'; // Default SMTP host here
 			$args['smtp_port'] = $r['smtp_port'] ? $r['smtp_port'] : 587; // Default SMTP port here
 
 			if ($r['flags'] & self::DB_SECURE_IMAP_TLS)
 			{
-				if (strpos($args['smtp_server'], ':') !== false)
+				if (strpos($args['smtp_host'], ':') !== false)
 					self::write_log('SMTP server already contains protocol, ignoring TLS flag.');
 				else
-					$args['smtp_server'] = 'tls://' . $args['smtp_server'];
+					$args['smtp_host'] = 'tls://' . $args['smtp_host'];
 			}
 		}
 
