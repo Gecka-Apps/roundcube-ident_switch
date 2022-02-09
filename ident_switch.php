@@ -69,7 +69,7 @@ class ident_switch extends rcube_plugin
 		{
 			$defaultKey = $type . '_mbox_default' . self::MY_POSTFIX;
 			$otherKey = $type . '_mbox' . self::MY_POSTFIX;
-			$val = $_SESSION[$otherKey] ? $_SESSION[$otherKey] : $_SESSION[$defaultKey];
+			$val = isset($_SESSION[$otherKey]) ? $_SESSION[$otherKey] : $_SESSION[$defaultKey];
 			$rc->config->set($type . '_mbox', $val);
 		}
 
@@ -107,7 +107,7 @@ class ident_switch extends rcube_plugin
 		elseif (ctype_digit($iid_s))
 			$iid = intval($iid_s);
 		
-		$accNames = array($_SESSION['global_alias'] ? $_SESSION['global_alias'] : $rc->user->data['username']);
+		$accNames = array(isset($_SESSION['global_alias']) ? $_SESSION['global_alias'] : $rc->user->data['username']);
 		$accValues = array(-1);
 		$accSelected = -1;
 
@@ -671,6 +671,8 @@ class ident_switch extends rcube_plugin
 					$rc->session->remove($k);
 				}
 			}
+			$delimiter = isset($config['imap_delimiter']) ? $config['imap_delimiter']:'.';
+            $_SESSION['imap_delimiter'] = $delimiter;
 			$_SESSION['username'] = $rc->user->data['username'];
 			$_SESSION['password'] = $_SESSION['password' . self::MY_POSTFIX];
 			$_SESSION['iid' . self::MY_POSTFIX] = -1;
@@ -678,7 +680,7 @@ class ident_switch extends rcube_plugin
 			foreach (rcube_storage::$folder_types as $type)
 			{
 				$otherKey = $type . '_mbox' . self::MY_POSTFIX;
-				if ($_SESSION[$otherKey])
+				if (isset($_SESSION[$otherKey]))
 					$rc->session->remove($otherKey);
 			}
 		}
@@ -706,7 +708,7 @@ class ident_switch extends rcube_plugin
 					{
 						if (strncasecmp($k, 'storage', 7) === 0 && substr_compare($k, self::MY_POSTFIX, -$my_postfix_len, $my_postfix_len) !== 0)
 						{
-							if (!$_SESSION[$k . self::MY_POSTFIX])
+							if (!isset($_SESSION[$k . self::MY_POSTFIX]))
 								$_SESSION[$k . self::MY_POSTFIX] = $_SESSION[$k];
 
 							$rc->session->remove($k);
@@ -716,7 +718,7 @@ class ident_switch extends rcube_plugin
 					$moreToSave = array('password', 'imap_delimiter');
 					foreach ($moreToSave as $k)
 					{
-						if (!$_SESSION[$k . self::MY_POSTFIX])
+						if (!isset($_SESSION[$k . self::MY_POSTFIX]))
 							$_SESSION[$k . self::MY_POSTFIX] = $_SESSION[$k];
 
 						$rc->session->remove($k);
@@ -737,7 +739,7 @@ class ident_switch extends rcube_plugin
 				if ($ssl && strncasecmp($host, $hostProtocol, strlen($hostProtocol)) !== 0)
 					$host = $hostProtocol . $host;
 
-				$delimiter = $r['imap_delimiter'] ? $r['imap_delimiter'] : '.'; // Default delimiter here
+				$delimiter = isset($r['imap_delimiter']) ? $r['imap_delimiter'] : '.'; // Default delimiter here
 
 				$_SESSION['storage_host'] = $host;
 				$_SESSION['storage_ssl'] = $ssl;
@@ -749,7 +751,7 @@ class ident_switch extends rcube_plugin
 
 				foreach (rcube_storage::$folder_types as $type)
 				{
-					if ($r[$type . '_mbox']) {
+					if (isset($r[$type . '_mbox'])) {
 						$otherKey = $type . '_mbox' . self::MY_POSTFIX;
 						$_SESSION[$otherKey] = $r[$type . '_mbox'];
 					}
