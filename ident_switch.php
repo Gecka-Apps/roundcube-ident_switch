@@ -4,7 +4,7 @@
  *
  * This plugin allows fast switching between accounts.
  *
- * @version 1.0
+ * @version 4.4.2
  * @author Boris Gulay
  * @url 
  */
@@ -192,16 +192,32 @@ class ident_switch extends rcube_plugin
 
 			$args['smtp_user'] = $r['username'];
 			$args['smtp_pass'] = $r['smtp_auth'] == self::SMTP_AUTH_IMAP ? $rc->decrypt($r['password']) : '';
-			$args['smtp_host'] = $r['smtp_host'] ? $r['smtp_host'] : 'localhost'; // Default SMTP host here
-			$args['smtp_port'] = $r['smtp_port'] ? $r['smtp_port'] : 587; // Default SMTP port here
+
+			# In 1.6 smtp_server was renamed to smtp_host and includes port. smtp_port was depricated.
+			$verParts = explode('.', RCMAIL_VERSION, 3);
+			$paramSmtpHost = 'smtp_host';
+			$paramSmtpPort = null;
+			if (intval($verParts[0]) <= 1 && intval($verParts[1]) < 6)
+			{
+				$paramSmtpHost = 'smtp_server';
+				$paramSmtpPort = 'smtp_port';
+			}
+
+			$args[$paramSmtpHost] = $r['smtp_host'] ? $r['smtp_host'] : 'localhost'; // Default SMTP host here
 
 			if ($r['flags'] & self::DB_SECURE_IMAP_TLS)
 			{
-				if (strpos($args['smtp_host'], ':') !== false)
+				if (strpos($args[$paramSmtpHost], ':') !== false)
 					self::write_log('SMTP server already contains protocol, ignoring TLS flag.');
 				else
-					$args['smtp_host'] = 'tls://' . $args['smtp_host'];
+					$args[$paramSmtpHost] = 'tls://' . $args[$paramSmtpHost];
 			}
+
+			$smtpPort = $r['smtp_port'] ? $r['smtp_port'] : 587; // Default SMTP port here
+			if ($paramSmtpPort)
+				$args[$paramSmtpPort] = $smtpPort;
+			else
+				$args[$paramSmtpHost] .= ':' . $smtpPort;
 		}
 
 		return $args;
