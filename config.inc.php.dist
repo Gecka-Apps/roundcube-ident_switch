@@ -3,6 +3,7 @@
  * ident_switch - Configuration file.
  *
  * Copyright (C) 2016 Boris Gulay
+ * Copyright (C) 2026 Gecka
  *
  * Original code licensed under GPL-3.0+.
  * New contributions licensed under AGPL-3.0+.
@@ -14,26 +15,26 @@
  * Preconfigured settings for different mail domains.
  * Appropriate set of values is searched by mapping domain of email (from identity) to array key.
  */
-$rcmail_config['ident_switch.preconfig'] = array(
+$config['ident_switch.preconfig'] = [
 
-	# Domain part of email address
-	'domain.tld' => array(
+	// Domain part of email address
+	'domain.tld' => [
 
-		# Hostname, use ssl:// or tls:// notation if needed, for no security use imap:// (must always start with scheme).
-		# Required.
+		// Hostname, use ssl:// or tls:// notation if needed, for no security use imap:// (must always start with scheme).
+		// Required.
 		'host' => 'imap://mail.domain.tld',
 
-		# Login name, can be 'email' (full address from identity), 'mbox' (only mailbox part).
-		# Any other value is threated ad 'not specified' (default).
+		// Login name, can be 'email' (full address from identity), 'mbox' (only mailbox part).
+		// Any other value is treated as 'not specified' (default).
 		'user' => 'email',
 
-		# Are specified settings locked in interface or not.
-		# Default - false.
-		'readonly' => true
-	),
+		// Are specified settings locked in interface or not.
+		// Default - false.
+		'readonly' => true,
+	],
 
-	'another.tld' => array(
+	'another.tld' => [
 		'host' => 'tls://mail.another.tld',
 		'user' => 'mbox',
-	),
-);
+	],
+];
