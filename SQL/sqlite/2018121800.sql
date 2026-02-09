@@ -65,7 +65,7 @@ SELECT
   port,
   label,
   flags,
-  host,
+  host
 FROM
   ident_switch_old;
 

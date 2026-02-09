@@ -1,19 +1,20 @@
 CREATE TABLE IF NOT EXISTS `ident_switch`
 (
 	`id`
-		int(10) UNSIGNED
+		int UNSIGNED
 		NOT NULL
 		AUTO_INCREMENT,
 	`user_id`
-		int(10) UNSIGNED
+		int UNSIGNED
 		NOT NULL,
 	`iid`
-		int(10) UNSIGNED
-		NOT NULL,
+		int UNSIGNED
+		NOT NULL
+		UNIQUE,
 	`username`
 		varchar(64),
 	`password`
-		varchar(64),
+		varchar(255),
 	`imap_host`
 		varchar(64),
 	`imap_port`
@@ -33,9 +34,9 @@ CREATE TABLE IF NOT EXISTS `ident_switch`
 		int
 		CHECK(`smtp_port` > 0 AND `smtp_port` <= 65535),
 	`smtp_auth`
-        smallint
-        NOT NULL
-        DEFAULT 1,
+		smallint
+		NOT NULL
+		DEFAULT 1,
 	`drafts_mbox`
 		varchar(64),
 	`sent_mbox`
@@ -51,4 +52,3 @@ CREATE TABLE IF NOT EXISTS `ident_switch`
 	INDEX `IX_ident_switch_user_id`(`user_id`),
 	INDEX `IX_ident_switch_iid`(`iid`)
 );
-
