@@ -1,2 +1,18 @@
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors
 *.swp
-.vscode
+*.swo
+*~
+
+# Composer
+/vendor/
