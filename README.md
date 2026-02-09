@@ -36,3 +36,10 @@ This plugin allows users to switch between different accounts (including remote)
 * Versions 5.x - for Roundcube v1.6+ (PHP 8.1+)
 
 This is a fork of the [original plugin](https://bitbucket.org/BoresExpress/ident_switch) by Boris Gulay, maintained at [Gecka-apps/ident_switch](https://github.com/Gecka-apps/ident_switch).
+
+### Contributors ###
+* **Boris Gulay** - Original developer (2016-2022)
+* **Christian Landvogt** - Special folders support (2019)
+* **Gergely Papp** - Bug fixes (2021)
+* **Mickael** - SMTP compatibility fix (2022)
+* **Laurent Dinclaux - Gecka** - Current maintainer (2026)

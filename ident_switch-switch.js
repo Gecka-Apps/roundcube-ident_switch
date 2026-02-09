@@ -1,5 +1,12 @@
-/*
- * This is part of identity_imap plugin
+/**
+ * ident_switch - Account switcher UI component.
+ *
+ * Copyright (C) 2016-2018 Boris Gulay
+ *
+ * Original code licensed under GPL-3.0+.
+ * New contributions licensed under AGPL-3.0+.
+ *
+ * @url https://github.com/Gecka-apps/ident_switch
  */
 
 $(function() {

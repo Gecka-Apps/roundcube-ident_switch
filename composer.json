@@ -10,6 +10,21 @@
             "name": "Boris Gulay",
             "email": "boris@gulay.name",
             "role": "Original Developer"
+        },
+        {
+            "name": "Christian Landvogt",
+            "email": "chris@lvgt.de",
+            "role": "Contributor"
+        },
+        {
+            "name": "Gergely Papp",
+            "email": "telirium@gmail.com",
+            "role": "Contributor"
+        },
+        {
+            "name": "Laurent Dinclaux",
+            "email": "laurent@gecka.nc",
+            "role": "Maintainer"
         }
     ],
     "repositories": [

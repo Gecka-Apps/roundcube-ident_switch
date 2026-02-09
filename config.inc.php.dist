@@ -1,4 +1,14 @@
 <?php
+/**
+ * ident_switch - Configuration file.
+ *
+ * Copyright (C) 2016 Boris Gulay
+ *
+ * Original code licensed under GPL-3.0+.
+ * New contributions licensed under AGPL-3.0+.
+ *
+ * @url https://github.com/Gecka-apps/ident_switch
+ */
 
 /*
  * Preconfigured settings for different mail domains.

@@ -1,12 +1,17 @@
 <?php
 /**
- * Identities IMAP
+ * ident_switch - Roundcube plugin for fast switching between accounts.
  *
- * This plugin allows fast switching between accounts.
+ * Copyright (C) 2016-2022 Boris Gulay
+ * Copyright (C) 2019      Christian Landvogt
+ * Copyright (C) 2021      Gergely Papp
+ * Copyright (C) 2022      Mickael
+ * Copyright (C) 2026      Gecka
  *
- * @version 4.4.2
- * @author Boris Gulay
- * @url 
+ * Original code licensed under GPL-3.0+.
+ * New contributions licensed under AGPL-3.0+.
+ *
+ * @url https://github.com/Gecka-apps/ident_switch
  */
 class ident_switch extends rcube_plugin
 {
