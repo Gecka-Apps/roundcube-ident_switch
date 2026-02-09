@@ -35,6 +35,9 @@ $labels['form.imap.username'] = 'Nom d\'utilisateur';
 // Password
 $labels['form.imap.password'] = 'Mot de passe';
 
+// Folder hierarchy delimiter
+$labels['form.imap.delimiter'] = 'Délimiteur de hiérarchie des dossiers';
+
 // Value in \'Username\' field of IMAP section is too long (64 chars max).
 $labels['err.user.long'] = 'La valeur du champ \'Nom d\'utilisateur\' de la section IMAP est trop longue (64 caractères max).';
 
@@ -51,8 +54,14 @@ $labels['form.smtp.tls'] = 'Connexion sécurisée (TLS)';
 // Port
 $labels['form.smtp.port'] = 'Port';
 
-// Authorization required
-$labels['form.smtp.auth'] = 'Autorisation requise';
+// Authorization
+$labels['form.smtp.auth'] = 'Autorisation';
+
+// As IMAP
+$labels['form.smtp.auth.imap'] = 'Identique à IMAP';
+
+// None
+$labels['form.smtp.auth.none'] = 'Aucune';
 
 
 // Errors
