@@ -41,7 +41,7 @@ class IdentSwitchPreconfig
 		$cfg = $cfg[$dom] ?? null;
 
 		if ($cfg) {
-			if (empty($cfg['host'])) {
+			if (empty($cfg['imap_host']) && empty($cfg['host'])) {
 				return false;
 			}
 		}
@@ -51,8 +51,13 @@ class IdentSwitchPreconfig
 	/**
 	 * Apply preconfigured settings to an identity form record.
 	 *
-	 * Parses the host URL to extract scheme, host, and port, then sets
-	 * the username based on the config's 'user' setting (email or mbox).
+	 * Parses IMAP and SMTP host URLs separately to extract scheme, host,
+	 * and port, then sets the username based on the config's 'user' setting.
+	 *
+	 * Supports both new format (imap_host + smtp_host) and legacy format
+	 * (single host for both). Schemes ssl:// and tls:// are handled:
+	 * - IMAP: ssl:// is stored in host field, tls:// sets the TLS checkbox.
+	 * - SMTP: scheme is stored directly in host field.
 	 *
 	 * @param array $record Identity record to modify (passed by reference).
 	 * @return bool True if the preconfig is readonly, false otherwise.
@@ -68,13 +73,41 @@ class IdentSwitchPreconfig
 		if (is_array($cfg)) {
 			ident_switch::write_log("Applying predefined configuration for '{$email}'.");
 
-			if (!empty($cfg['host'])) {
-				$urlArr = parse_url($cfg['host']);
+			// IMAP: use imap_host, fallback to host
+			$imapUrl = $cfg['imap_host'] ?? $cfg['host'] ?? '';
+			if (!empty($imapUrl)) {
+				$urlArr = parse_url($imapUrl);
+				$host = !empty($urlArr['host']) ? rcube::Q($urlArr['host'], 'url') : '';
+				$scheme = strtolower($urlArr['scheme'] ?? '');
 
-				$record['ident_switch.form.imap.host'] = $record['ident_switch.form.smtp.host'] = !empty($urlArr['host']) ? rcube::Q($urlArr['host'], 'url') : '';
-				$record['ident_switch.form.imap.port'] = $record['ident_switch.form.smtp.port'] = !empty($urlArr['port']) ? intval($urlArr['port']) : '';
+				if ($scheme === 'ssl') {
+					$record['ident_switch.form.imap.host'] = 'ssl://' . $host;
+					$record['ident_switch.form.imap.tls'] = false;
+				} elseif ($scheme === 'tls') {
+					$record['ident_switch.form.imap.host'] = $host;
+					$record['ident_switch.form.imap.tls'] = true;
+				} else {
+					$record['ident_switch.form.imap.host'] = $host;
+					$record['ident_switch.form.imap.tls'] = false;
+				}
 
-				$record['ident_switch.form.imap.tls'] = strcasecmp($urlArr['scheme'] ?? '', 'tls') === 0;
+				$record['ident_switch.form.imap.port'] = !empty($urlArr['port']) ? intval($urlArr['port']) : '';
+			}
+
+			// SMTP: use smtp_host, fallback to host
+			$smtpUrl = $cfg['smtp_host'] ?? $cfg['host'] ?? '';
+			if (!empty($smtpUrl)) {
+				$urlArr = parse_url($smtpUrl);
+				$host = !empty($urlArr['host']) ? rcube::Q($urlArr['host'], 'url') : '';
+				$scheme = strtolower($urlArr['scheme'] ?? '');
+
+				if ($scheme === 'tls' || $scheme === 'ssl') {
+					$record['ident_switch.form.smtp.host'] = $scheme . '://' . $host;
+				} else {
+					$record['ident_switch.form.smtp.host'] = $host;
+				}
+
+				$record['ident_switch.form.smtp.port'] = !empty($urlArr['port']) ? intval($urlArr['port']) : '';
 			}
 
 			$loginSet = false;

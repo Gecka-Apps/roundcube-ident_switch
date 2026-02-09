@@ -20,9 +20,15 @@ $config['ident_switch.preconfig'] = [
 	// Domain part of email address
 	'domain.tld' => [
 
-		// Hostname, use ssl:// or tls:// notation if needed, for no security use imap:// (must always start with scheme).
+		// IMAP connection: scheme://host:port
+		// Schemes: ssl:// for IMAPS (port 993), tls:// for STARTTLS (port 143).
 		// Required.
-		'host' => 'imap://mail.domain.tld',
+		'imap_host' => 'ssl://mail.domain.tld:993',
+
+		// SMTP connection: scheme://host:port
+		// Schemes: tls:// for STARTTLS (port 587), ssl:// for SMTPS (port 465).
+		// Falls back to imap_host if not specified.
+		'smtp_host' => 'tls://mail.domain.tld:587',
 
 		// Login name, can be 'email' (full address from identity), 'mbox' (only mailbox part).
 		// Any other value is treated as 'not specified' (default).
@@ -34,7 +40,8 @@ $config['ident_switch.preconfig'] = [
 	],
 
 	'another.tld' => [
-		'host' => 'tls://mail.another.tld',
+		'imap_host' => 'tls://mail.another.tld:143',
+		'smtp_host' => 'tls://mail.another.tld:587',
 		'user' => 'mbox',
 	],
 ];
