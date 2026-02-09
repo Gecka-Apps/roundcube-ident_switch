@@ -21,16 +21,14 @@ function plugin_switchIdent_processPreconfig() {
     var disVal = disFld.val();
     if (disVal > 0) {
         $("INPUT[name='_ident_switch.form.imap.host']").prop("disabled", true);
-        $("SELECT[name='_ident_switch.form.imap.tls']").prop("disabled", true);
+        $("INPUT[name='_ident_switch.form.imap.tls']").prop("disabled", true);
         $("INPUT[name='_ident_switch.form.imap.port']").prop("disabled", true);
 
         $("INPUT[name='_ident_switch.form.smtp.host']").prop("disabled", true);
-        $("SELECT[name='_ident_switch.form.smtp.tls']").prop("disabled", true);
         $("INPUT[name='_ident_switch.form.smtp.port']").prop("disabled", true);
     }
     if (2 == disVal) {
         $("INPUT[name='_ident_switch.form.imap.username']").prop("disabled", true);
-        $("INPUT[name='_ident_switch.form.smtp.username']").prop("disabled", true);
     }
 
 }
