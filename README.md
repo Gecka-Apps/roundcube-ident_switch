@@ -52,6 +52,26 @@ Optionally copy `plugins/ident_switch/config.inc.php.dist` to `plugins/ident_swi
     * **Server host name** - host name for imap server. If left blank 'localhost' will be used.
     * **Port** - port on server to connect to. If left blank 587 will be used.
 
+### Migrating from the original plugin ###
+
+If you are upgrading from the original `boressoft/ident_switch` or another fork:
+
+1. Replace the plugin files in `plugins/ident_switch/`.
+2. Run the database migration to update the schema:
+```sh
+bin/updatedb.sh --package=ident_switch --dir=plugins/ident_switch/SQL
+```
+3. If you use `config.inc.php`, update it to the new format. The `'host'` key has been replaced by separate `'imap_host'` and `'smtp_host'` keys (the old `'host'` key still works as fallback):
+```php
+'domain.tld' => [
+    'imap_host' => 'ssl://mail.domain.tld:993',
+    'smtp_host' => 'tls://mail.domain.tld:587',
+    'user' => 'email',
+    'readonly' => true,
+],
+```
+4. If installed via Composer, update `composer.json` to use `gecka/roundcube-ident_switch` instead of `boressoft/ident_switch`.
+
 ### Version compatibility ###
 * Versions 1.X (not supported any more) - for Roundcube v1.1
 * Versions 2.X (not supported any more) - for Roundcube v1.2
