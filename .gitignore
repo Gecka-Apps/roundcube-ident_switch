@@ -14,5 +14,8 @@ Desktop.ini
 *.swo
 *~
 
+# Plugin config
+config.inc.php
+
 # Composer
 /vendor/
