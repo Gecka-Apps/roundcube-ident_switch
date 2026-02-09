@@ -39,7 +39,9 @@
         "ext-ctype": "*"
     },
     "conflict": {
-        "elm/identity_smtp": "*"
+        "boressoft/ident_switch": "*",
+        "elm/identity_smtp": "*",
+        "toteph42/identity_switch": "*"
     },
     "support": {
         "issues": "https://github.com/Gecka-apps/ident_switch/issues"
