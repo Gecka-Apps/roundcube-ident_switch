@@ -33,5 +33,6 @@ This plugin allows users to switch between different accounts (including remote)
 * Versions 2.X (not supported any more) - for Roundcube v1.2
 * Versions 3.X (not supported any more) - for Roundcube v1.3
 * Versions 4.x - for Roundcube v1.3, 1.4 and 1.5.
+* Versions 5.x - for Roundcube v1.6+ (PHP 8.1+)
 
-Please specify version like "~2.0" in your composer.json file for ident_switch requirement. In this case you will stay inside compatible branch until you manually update your Roundcube installation.
+This is a fork of the [original plugin](https://bitbucket.org/BoresExpress/ident_switch) by Boris Gulay, maintained at [Gecka-apps/ident_switch](https://github.com/Gecka-apps/ident_switch).
