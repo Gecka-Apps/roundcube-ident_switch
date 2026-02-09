@@ -7,6 +7,30 @@ This plugin allows users to switch between different accounts (including remote)
 
 *Inspired by identities_imap plugin that is no longer supported.*
 
+### Installation ###
+
+#### With Composer (recommended) ####
+
+```sh
+composer require gecka/roundcube-ident_switch
+bin/updatedb.sh --package=ident_switch --dir=plugins/ident_switch/SQL
+```
+
+The plugin is automatically registered. Enable it by adding `'ident_switch'` to `$config['plugins']` in your Roundcube `config/config.inc.php`.
+
+#### Manual ####
+
+1. Copy or symlink the plugin to `plugins/ident_switch` in your Roundcube installation.
+2. Add `'ident_switch'` to the `$config['plugins']` array in your Roundcube `config/config.inc.php`.
+3. Initialize the database schema:
+```sh
+bin/updatedb.sh --package=ident_switch --dir=plugins/ident_switch/SQL
+```
+
+#### Configuration ####
+
+Optionally copy `plugins/ident_switch/config.inc.php.dist` to `plugins/ident_switch/config.inc.php` and edit it to preconfigure mail settings per domain.
+
 ### Where to start ###
 * In settings interface create new identity.
 * For all identities except default you will see new section of settings - "Plugin ident_switch" (see screenshot below). Enter data required to connect to  remote server. Don't forget to check Enabled check box.
