@@ -31,6 +31,8 @@ $labels['form.imap.port'] = 'Vrata';
 
 // Folder hierarchy delimiter
 $labels['form.imap.delimiter'] = 'Ločilo hierarhije map';
+$labels['form.imap.delimiter.auto'] = 'Samodejno zaznavanje';
+$labels['form.imap.delimiter.manual'] = 'Ročno';
 
 // Username
 $labels['form.imap.username'] = 'Uporabniško ime';

@@ -31,6 +31,8 @@ $labels['form.imap.port'] = 'Порт';
 
 // Folder hierarchy delimiter
 $labels['form.imap.delimiter'] = 'Разделитель в иерархии папок';
+$labels['form.imap.delimiter.auto'] = 'Автоопределение';
+$labels['form.imap.delimiter.manual'] = 'Вручную';
 
 // Username
 $labels['form.imap.username'] = 'Имя пользователя';

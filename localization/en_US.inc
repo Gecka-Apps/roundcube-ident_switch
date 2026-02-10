@@ -31,6 +31,8 @@ $labels['form.imap.port'] = 'Port';
 
 // Folder hierarchy delimiter
 $labels['form.imap.delimiter'] = 'Folder hierarchy delimiter';
+$labels['form.imap.delimiter.auto'] = 'Auto-detect';
+$labels['form.imap.delimiter.manual'] = 'Manual';
 
 // Username
 $labels['form.imap.username'] = 'Username';

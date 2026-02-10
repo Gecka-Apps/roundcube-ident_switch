@@ -54,7 +54,7 @@ class IdentSwitchForm
 			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 993],
 			$prefix . 'username' => ['type' => 'text', 'size' => 64, 'placeholder' => $record['email'] ?? ''],
 			$prefix . 'password' => ['type' => 'password', 'size' => 64],
-			$prefix . 'delimiter' => ['type' => 'text', 'size' => 1, 'placeholder' => 'Auto'],
+			$prefix . 'delimiter' => ['value' => $this->build_delimiter_field($prefix, $record)],
 		];
 	}
 
@@ -167,6 +167,31 @@ class IdentSwitchForm
 			. '</div>';
 
 		return $select->show($current) . $warning;
+	}
+
+	/**
+	 * Build the delimiter field with Auto/Manual mode select.
+	 *
+	 * @param string $prefix  Form field prefix (e.g. 'ident_switch.form.imap.').
+	 * @param array  $record  Identity record data.
+	 * @return string Rendered HTML select + text input.
+	 */
+	private function build_delimiter_field(string $prefix, array &$record): string
+	{
+		$delimValue = $record[$prefix . 'delimiter'] ?? '';
+		$mode = ($delimValue !== '' && $delimValue !== null) ? 'manual' : 'auto';
+
+		$select = new html_select(['name' => "_{$prefix}delimiter_mode"]);
+		$select->add($this->plugin->gettext('form.imap.delimiter.auto'), 'auto');
+		$select->add($this->plugin->gettext('form.imap.delimiter.manual'), 'manual');
+
+		$hidden = $mode === 'auto' ? ' style="display:none"' : '';
+		$input = new html_inputfield(['name' => "_{$prefix}delimiter", 'size' => 1]);
+
+		return $select->show($mode)
+			. ' <span id="ident-switch-delimiter-input"' . $hidden . '>'
+			. $input->show($delimValue)
+			. '</span>';
 	}
 
 	/**
@@ -531,10 +556,15 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
-		$retVal['imap.delimiter'] = self::get_field_value('imap', 'delimiter');
-		if (strlen($retVal['imap.delimiter'] ?? '') > 1) {
-			$retVal['err'] = 'delim.long';
-			return $retVal;
+		$delimMode = self::get_field_value('imap', 'delimiter_mode');
+		if ($delimMode === 'manual') {
+			$retVal['imap.delimiter'] = self::get_field_value('imap', 'delimiter');
+			if (strlen($retVal['imap.delimiter'] ?? '') > 1) {
+				$retVal['err'] = 'delim.long';
+				return $retVal;
+			}
+		} else {
+			$retVal['imap.delimiter'] = null;
 		}
 
 		$retVal['imap.user'] = self::get_field_value('imap', 'username');

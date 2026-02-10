@@ -37,6 +37,8 @@ $labels['form.imap.password'] = 'Mot de passe';
 
 // Folder hierarchy delimiter
 $labels['form.imap.delimiter'] = 'Délimiteur de hiérarchie des dossiers';
+$labels['form.imap.delimiter.auto'] = 'Auto-détection';
+$labels['form.imap.delimiter.manual'] = 'Manuel';
 
 // Value in \'Username\' field of IMAP section is too long (64 chars max).
 $labels['err.user.long'] = 'La valeur du champ \'Nom d\'utilisateur\' de la section IMAP est trop longue (64 caractères max).';

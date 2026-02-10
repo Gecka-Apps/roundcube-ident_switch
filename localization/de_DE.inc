@@ -37,6 +37,8 @@ $labels['form.imap.password'] = 'Passwort';
 
 // Folder hierarchy delimiter
 $labels['form.imap.delimiter'] = 'Ordnerhierarchie-Trennzeichen';
+$labels['form.imap.delimiter.auto'] = 'Automatisch erkennen';
+$labels['form.imap.delimiter.manual'] = 'Manuell';
 
 // Value in \'Username\' field is too long (64 chars max).
 $labels['err.user.long'] = 'Der Wert in Feld \'Benutzername\' ist zu lang (max. 64 Zeichen).';

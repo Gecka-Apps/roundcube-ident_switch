@@ -43,9 +43,14 @@ $(function() {
 		});
 	});
 
-	// Delimiter blur handler
-	$("INPUT[name='_ident_switch.form.imap.delimiter']").on('blur', function() {
-		plugin_switchIdent_clearIfDefault($(this));
+	// Delimiter mode handler
+	$("SELECT[name='_ident_switch.form.imap.delimiter_mode']").on('change', function() {
+		if ($(this).val() === 'manual') {
+			$('#ident-switch-delimiter-input').show();
+		} else {
+			$('#ident-switch-delimiter-input').hide();
+			$("INPUT[name='_ident_switch.form.imap.delimiter']").val('');
+		}
 	});
 });
 
@@ -112,6 +117,9 @@ function plugin_switchIdent_processPreconfig() {
 		$("INPUT[name='_ident_switch.form.smtp.host']").prop("disabled", true);
 		$("SELECT[name='_ident_switch.form.smtp.security']").prop("disabled", true);
 		$("INPUT[name='_ident_switch.form.smtp.port']").prop("disabled", true);
+
+		$("SELECT[name='_ident_switch.form.imap.delimiter_mode']").prop("disabled", true);
+		$("INPUT[name='_ident_switch.form.imap.delimiter']").prop("disabled", true);
 
 		$("INPUT[name='_ident_switch.form.sieve.host']").prop("disabled", true);
 		$("SELECT[name='_ident_switch.form.sieve.security']").prop("disabled", true);

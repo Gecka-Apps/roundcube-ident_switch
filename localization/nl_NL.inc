@@ -31,6 +31,8 @@ $labels['form.imap.port'] = 'Poortnummer';
 
 // Folder hierarchy delimiter
 $labels['form.imap.delimiter'] = 'Map hiërarchie scheidingsteken';
+$labels['form.imap.delimiter.auto'] = 'Automatisch detecteren';
+$labels['form.imap.delimiter.manual'] = 'Handmatig';
 
 // Username
 $labels['form.imap.username'] = 'Gebruikersnaam';

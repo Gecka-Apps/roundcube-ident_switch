@@ -31,6 +31,8 @@ $labels['form.imap.port'] = 'Porta';
 
 // Folder hierarchy delimiter
 $labels['form.imap.delimiter'] = 'Delimitatore gerarchico delle cartelle';
+$labels['form.imap.delimiter.auto'] = 'Rilevamento automatico';
+$labels['form.imap.delimiter.manual'] = 'Manuale';
 
 // Username
 $labels['form.imap.username'] = 'Username';
