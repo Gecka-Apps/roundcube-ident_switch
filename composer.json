@@ -2,7 +2,7 @@
     "name": "gecka/roundcube-ident_switch",
     "type": "roundcube-plugin",
     "description": "This plugin allows users to switch between different accounts (including remote) in single Roundcube session.",
-    "homepage": "https://github.com/Gecka-apps/ident_switch",
+    "homepage": "https://github.com/Gecka-Apps/roundcube-ident_switch",
     "keywords": ["identity", "imap", "mail", "switch"],
     "license": "AGPL-3.0+",
     "authors": [
@@ -47,10 +47,11 @@
         "toteph42/identity_switch": "*"
     },
     "support": {
-        "issues": "https://github.com/Gecka-apps/ident_switch/issues"
+        "issues": "https://github.com/Gecka-Apps/roundcube-ident_switch/issues"
     },
     "extra": {
         "roundcube": {
+            "plugin-name": "ident_switch",
             "min-version": "1.6",
             "sql-dir": "SQL"
         }

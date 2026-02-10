@@ -122,7 +122,11 @@ function plugin_switchIdent_addCbElastic($wrapper, $sw) {
 /**
  * Perform account switch via AJAX (called from <select> onchange).
  */
+var ident_switch_switching = false;
+
 function plugin_switchIdent_switch(val) {
+	if (ident_switch_switching) return;
+	ident_switch_switching = true;
 	rcmail.env.unread_counts = {};
 	rcmail.http_post('plugin.ident_switch.switch', {
 		'_ident-id': val,
@@ -167,7 +171,7 @@ function ident_switch_updateCounts(data) {
 
 		if (map[iid] === undefined) continue;
 		var selectVal = '' + map[iid];
-		var $opt = $select.find('option[value="' + selectVal + '"]');
+		var $opt = $select.find('option').filter(function() { return $(this).val() === selectVal; });
 		if (!$opt.length) continue;
 
 		// Skip active account on mail task
@@ -295,8 +299,9 @@ function plugin_switchIdent_filterFrom() {
 	});
 
 	// If selected option was removed, select the first remaining
-	if (allowed.indexOf(currentVal) === -1) {
-		$from.val($from.find('option:first').val()).trigger('change');
+	var $remaining = $from.find('option:first');
+	if (allowed.indexOf(currentVal) === -1 && $remaining.length) {
+		$from.val($remaining.val()).trigger('change');
 	}
 }
 

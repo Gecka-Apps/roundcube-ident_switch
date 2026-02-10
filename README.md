@@ -162,6 +162,8 @@ Database migrations are applied automatically by the Roundcube plugin installer.
 
 If you are upgrading from `boressoft/ident_switch`, `toteph42/identity_switch`, or another fork:
 
+> **Important:** This version (5.x) requires a **v4.x database schema** as its starting point. If you are running v1.x–v3.x, you must first upgrade to v4.x (`boressoft/ident_switch`) before migrating to this fork. This applies to all supported databases (MySQL, PostgreSQL, SQLite).
+
 ### With Composer
 
 1. Replace the old package in `composer.json` with `gecka/roundcube-ident_switch` and run `composer update`
@@ -202,7 +204,7 @@ Original code by Boris Gulay licensed under GPL-3.0+. New contributions licensed
 - **Boris Gulay** — Original developer (2016–2022)
 - **Christian Landvogt** — Special folders support
 - **Gergely Papp** — Bug fixes
-- **Laurent Dinclaux - Gecka** — Current maintainer ([Gecka](https://gecka.nc))
+- **Laurent Dinclaux** — Current maintainer ([Gecka](https://gecka.nc))
 
 ---
 

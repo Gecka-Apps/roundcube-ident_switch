@@ -209,7 +209,7 @@ class ident_switch extends rcube_plugin
             }
 
             $lbl = $r['label'] ?: $r['username'] ?: $r['email'];
-            $accNames[] = rcube::Q($lbl);
+            $accNames[] = $lbl;
         }
 
         if (count($accValues) <= 1) {
