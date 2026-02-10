@@ -38,7 +38,7 @@ class IdentSwitchPreconfig
 		$this->plugin->load_config();
 
 		$cfg = rcmail::get_instance()->config->get('ident_switch.preconfig', []);
-		$cfg = $cfg[$dom] ?? null;
+		$cfg = $cfg[$dom] ?? $cfg['*'] ?? null;
 
 		if ($cfg) {
 			if (empty($cfg['imap_host']) && empty($cfg['host'])) {

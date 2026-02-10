@@ -14,6 +14,7 @@
 /*
  * Preconfigured settings for different mail domains.
  * Appropriate set of values is searched by mapping domain of email (from identity) to array key.
+ * Use '*' as a wildcard to match any domain not explicitly listed.
  */
 $config['ident_switch.preconfig'] = [
 
@@ -49,6 +50,13 @@ $config['ident_switch.preconfig'] = [
 		'smtp_host' => 'tls://mail.another.tld:587',
 		'user' => 'mbox',
 	],
+
+	// Wildcard: default settings for any domain not listed above.
+	// '*' => [
+	//	'imap_host' => 'ssl://mail.example.com:993',
+	//	'smtp_host' => 'tls://mail.example.com:587',
+	//	'user' => 'email',
+	// ],
 ];
 
 /*
