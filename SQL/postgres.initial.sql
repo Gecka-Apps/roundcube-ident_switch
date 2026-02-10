@@ -38,6 +38,15 @@ CREATE TABLE ident_switch
 		smallint
 		NOT NULL
 		DEFAULT(1),
+	sieve_host
+		varchar(64),
+	sieve_port
+		integer
+		CHECK(sieve_port > 0 AND sieve_port <= 65535),
+	sieve_auth
+		smallint
+		NOT NULL
+		DEFAULT(1),
 	drafts_mbox
 		varchar(64),
 	sent_mbox

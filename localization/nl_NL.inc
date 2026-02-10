@@ -64,6 +64,25 @@ $labels['form.smtp.auth.imap'] = 'Zoals IMAP';
 $labels['form.smtp.auth.none'] = 'Geen';
 
 
+// Sieve
+$labels['form.sieve.caption'] = 'Sieve';
+
+// Server host name
+$labels['form.sieve.host'] = 'Servernaam';
+
+// Port
+$labels['form.sieve.port'] = 'Poortnummer';
+
+// Authorization
+$labels['form.sieve.auth'] = 'Autorisatie';
+
+// As IMAP
+$labels['form.sieve.auth.imap'] = 'Zoals IMAP';
+
+// None
+$labels['form.sieve.auth.none'] = 'Geen';
+
+
 // Errors
 
 // Value in \'Server host name\' field is too long (64 chars max).

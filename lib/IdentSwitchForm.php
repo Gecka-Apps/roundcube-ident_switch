@@ -80,10 +80,31 @@ class IdentSwitchForm
 	}
 
 	/**
+	 * Build the Sieve (managesieve) form fields for identity settings.
+	 *
+	 * @param array $record Identity record data used for default auth type selection.
+	 * @return array Form field definitions for Sieve host, port, and auth type.
+	 */
+	public function get_sieve_fields(array &$record): array
+	{
+		$prefix = 'ident_switch.form.sieve.';
+
+		$authType = new html_select(['name' => "_{$prefix}auth"]);
+		$authType->add($this->plugin->gettext('form.sieve.auth.imap'), ident_switch::SIEVE_AUTH_IMAP);
+		$authType->add($this->plugin->gettext('form.sieve.auth.none'), ident_switch::SIEVE_AUTH_NONE);
+
+		return [
+			$prefix . 'host' => ['type' => 'text', 'size' => 64, 'placeholder' => 'localhost'],
+			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 4190],
+			$prefix . 'auth' => ['value' => $authType->show([$record['ident_switch.form.sieve.auth'] ?? null])],
+		];
+	}
+
+	/**
 	 * Handle identity_form hook: add plugin-specific fields to the identity editor.
 	 *
 	 * Loads existing account data from the database (if editing) or applies
-	 * preconfigured settings, then adds Common/IMAP/SMTP sections to the form.
+	 * preconfigured settings, then adds Common/IMAP/SMTP/Sieve sections to the form.
 	 *
 	 * @param array                $args      Hook arguments containing 'record' with identity data.
 	 * @param IdentSwitchPreconfig $preconfig Preconfiguration handler.
@@ -126,6 +147,9 @@ class IdentSwitchForm
 				'smtp_host' => 'smtp.host',
 				'smtp_port' => 'smtp.port',
 				'smtp_auth' => 'smtp.auth',
+				'sieve_host' => 'sieve.host',
+				'sieve_port' => 'sieve.port',
+				'sieve_auth' => 'sieve.auth',
 			];
 			foreach ($row as $k => $v) {
 				if (isset($dbToForm[$k])) {
@@ -160,6 +184,10 @@ class IdentSwitchForm
 		$args['form']['ident_switch.smtp'] = [
 			'name' => $this->plugin->gettext('form.smtp.caption'),
 			'content' => $this->get_smtp_fields($record),
+		];
+		$args['form']['ident_switch.sieve'] = [
+			'name' => $this->plugin->gettext('form.sieve.caption'),
+			'content' => $this->get_sieve_fields($record),
 		];
 
 		return $args;
@@ -315,6 +343,8 @@ class IdentSwitchForm
 			'ident_switch.form.imap.username' => 'imap.user',
 			'ident_switch.form.smtp.host' => 'smtp.host',
 			'ident_switch.form.smtp.port' => 'smtp.port',
+			'ident_switch.form.sieve.host' => 'sieve.host',
+			'ident_switch.form.sieve.port' => 'sieve.port',
 		];
 
 		foreach ($map as $recordKey => $dataKey) {
@@ -397,6 +427,28 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
+		$retVal['sieve.host'] = self::get_field_value('sieve', 'host');
+		if (strlen($retVal['sieve.host'] ?? '') > 64) {
+			$retVal['err'] = 'host.long';
+			return $retVal;
+		}
+
+		$retVal['sieve.port'] = self::get_field_value('sieve', 'port');
+		if ($retVal['sieve.port'] && !ctype_digit($retVal['sieve.port'])) {
+			$retVal['err'] = 'port.num';
+			return $retVal;
+		}
+		if ($retVal['sieve.port'] && ($retVal['sieve.port'] <= 0 || $retVal['sieve.port'] > 65535)) {
+			$retVal['err'] = 'port.range';
+			return $retVal;
+		}
+
+		$retVal['sieve.auth'] = self::get_field_value('sieve', 'auth');
+		if (!ctype_digit($retVal['sieve.auth'] ?? '')) {
+			$retVal['err'] = 'auth.num';
+			return $retVal;
+		}
+
 		// Get also password
 		$retVal['imap.pass'] = self::get_field_value('imap', 'password', false, true);
 
@@ -453,13 +505,13 @@ class IdentSwitchForm
 			// Record already exists, will update it
 			$sql = 'UPDATE ' .
 				$rc->db->table_name(ident_switch::TABLE) .
-				' SET flags = ?, label = ?, imap_host = ?, imap_port = ?, imap_delimiter = ?, username = ?, password = ?, smtp_host = ?, smtp_port = ?, smtp_auth = ?, user_id = ?, iid = ?' .
+				' SET flags = ?, label = ?, imap_host = ?, imap_port = ?, imap_delimiter = ?, username = ?, password = ?, smtp_host = ?, smtp_port = ?, smtp_auth = ?, sieve_host = ?, sieve_port = ?, sieve_auth = ?, user_id = ?, iid = ?' .
 				' WHERE id = ?';
 		} elseif ($data['flags'] & ident_switch::DB_ENABLED) {
 			// No record exists, create new one
 			$sql = 'INSERT INTO ' .
 				$rc->db->table_name(ident_switch::TABLE) .
-				'(flags, label, imap_host, imap_port, imap_delimiter, username, password, smtp_host, smtp_port, smtp_auth, user_id, iid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+				'(flags, label, imap_host, imap_port, imap_delimiter, username, password, smtp_host, smtp_port, smtp_auth, sieve_host, sieve_port, sieve_auth, user_id, iid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 		} else {
 			return false;
 		}
@@ -481,6 +533,9 @@ class IdentSwitchForm
 			$data['smtp.host'],
 			$data['smtp.port'],
 			$data['smtp.auth'],
+			$data['sieve.host'],
+			$data['sieve.port'],
+			$data['sieve.auth'],
 			$rc->user->ID,
 			$data['id'],
 			$r['id'] ?? null

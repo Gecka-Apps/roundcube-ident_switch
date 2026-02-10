@@ -26,6 +26,9 @@ function plugin_switchIdent_processPreconfig() {
 
         $("INPUT[name='_ident_switch.form.smtp.host']").prop("disabled", true);
         $("INPUT[name='_ident_switch.form.smtp.port']").prop("disabled", true);
+
+        $("INPUT[name='_ident_switch.form.sieve.host']").prop("disabled", true);
+        $("INPUT[name='_ident_switch.form.sieve.port']").prop("disabled", true);
     }
     if (2 == disVal) {
         $("INPUT[name='_ident_switch.form.imap.username']").prop("disabled", true);

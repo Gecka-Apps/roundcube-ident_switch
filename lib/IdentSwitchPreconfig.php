@@ -110,6 +110,22 @@ class IdentSwitchPreconfig
 				$record['ident_switch.form.smtp.port'] = !empty($urlArr['port']) ? intval($urlArr['port']) : '';
 			}
 
+			// Sieve: use sieve_host only (no fallback — sieve is optional)
+			$sieveUrl = $cfg['sieve_host'] ?? '';
+			if (!empty($sieveUrl)) {
+				$urlArr = parse_url($sieveUrl);
+				$host = !empty($urlArr['host']) ? rcube::Q($urlArr['host'], 'url') : '';
+				$scheme = strtolower($urlArr['scheme'] ?? '');
+
+				if ($scheme === 'tls' || $scheme === 'ssl') {
+					$record['ident_switch.form.sieve.host'] = $scheme . '://' . $host;
+				} else {
+					$record['ident_switch.form.sieve.host'] = $host;
+				}
+
+				$record['ident_switch.form.sieve.port'] = !empty($urlArr['port']) ? intval($urlArr['port']) : '';
+			}
+
 			$loginSet = false;
 			if (!empty($cfg['user'])) {
 				match (strtoupper($cfg['user'])) {

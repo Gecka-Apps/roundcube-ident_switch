@@ -30,6 +30,11 @@ $config['ident_switch.preconfig'] = [
 		// Falls back to imap_host if not specified.
 		'smtp_host' => 'tls://mail.domain.tld:587',
 
+		// Sieve (managesieve) connection: scheme://host:port
+		// Schemes: tls:// for STARTTLS (port 4190), ssl:// for implicit TLS.
+		// Optional. Only needed if the managesieve plugin is installed.
+		'sieve_host' => 'tls://mail.domain.tld:4190',
+
 		// Login name, can be 'email' (full address from identity), 'mbox' (only mailbox part).
 		// Any other value is treated as 'not specified' (default).
 		'user' => 'email',

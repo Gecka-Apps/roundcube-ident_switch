@@ -195,6 +195,51 @@ class IdentSwitchSwitcher
 	}
 
 	/**
+	 * Handle managesieve_connect hook: configure Sieve settings for the active account.
+	 *
+	 * Loads Sieve host, port, and credentials from the database
+	 * for the currently selected identity.
+	 *
+	 * @param array $args Hook arguments containing Sieve connection parameters.
+	 * @return array Modified hook arguments with updated Sieve settings.
+	 */
+	public function configure_managesieve(array $args): array
+	{
+		$iid = $_SESSION['iid' . ident_switch::MY_POSTFIX] ?? null;
+		if (!is_numeric($iid) || $iid == -1) {
+			return $args;
+		}
+
+		$rc = rcmail::get_instance();
+
+		$sql = 'SELECT sieve_host, sieve_port, sieve_auth, username, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
+		$q = $rc->db->query($sql, $iid, $rc->user->ID);
+		$r = $rc->db->fetch_assoc($q);
+		if (is_array($r) && !empty($r['sieve_host'])) {
+			if (!$r['username']) {
+				$sql = 'SELECT email FROM ' . $rc->db->table_name('identities') . ' WHERE identity_id = ?';
+				$q = $rc->db->query($sql, $iid);
+				$rIid = $rc->db->fetch_assoc($q);
+				$r['username'] = $rIid['email'];
+			}
+
+			$sieveHost = $r['sieve_host'];
+			$sievePort = $r['sieve_port'] ?: 4190;
+			$args['host'] = $sieveHost . ':' . $sievePort;
+
+			if ($r['sieve_auth'] == ident_switch::SIEVE_AUTH_IMAP) {
+				$args['user'] = $r['username'];
+				$args['password'] = $rc->decrypt($r['password']);
+			} else {
+				$args['user'] = '';
+				$args['password'] = '';
+			}
+		}
+
+		return $args;
+	}
+
+	/**
 	 * Handle preferences_list hook: customize special folders form for remote accounts.
 	 *
 	 * When viewing folder preferences while impersonating, shows the remote account's

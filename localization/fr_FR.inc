@@ -64,6 +64,25 @@ $labels['form.smtp.auth.imap'] = 'Identique à IMAP';
 $labels['form.smtp.auth.none'] = 'Aucune';
 
 
+// Sieve
+$labels['form.sieve.caption'] = 'Sieve';
+
+// Server host name
+$labels['form.sieve.host'] = 'Serveur';
+
+// Port
+$labels['form.sieve.port'] = 'Port';
+
+// Authorization
+$labels['form.sieve.auth'] = 'Autorisation';
+
+// As IMAP
+$labels['form.sieve.auth.imap'] = 'Identique à IMAP';
+
+// None
+$labels['form.sieve.auth.none'] = 'Aucune';
+
+
 // Errors
 
 // Value in \'Server host name\' field is too long (64 chars max).

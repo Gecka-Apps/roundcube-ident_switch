@@ -41,6 +41,12 @@ class ident_switch extends rcube_plugin
 	/** @var int SMTP authentication: no authentication required. */
 	public const SMTP_AUTH_NONE = 2;
 
+	/** @var int Sieve authentication: use same credentials as IMAP. */
+	public const SIEVE_AUTH_IMAP = 1;
+
+	/** @var int Sieve authentication: no authentication required. */
+	public const SIEVE_AUTH_NONE = 2;
+
 	private IdentSwitchForm $form;
 	private IdentSwitchSwitcher $switcher;
 	private IdentSwitchPreconfig $preconfig;
@@ -57,6 +63,7 @@ class ident_switch extends rcube_plugin
 		$this->add_hook('startup', [$this, 'on_startup']);
 		$this->add_hook('render_page', [$this, 'on_render_page']);
 		$this->add_hook('smtp_connect', [$this, 'on_smtp_connect']);
+		$this->add_hook('managesieve_connect', [$this, 'on_managesieve_connect']);
 		$this->add_hook('identity_form', [$this, 'on_identity_form']);
 		$this->add_hook('identity_update', [$this, 'on_identity_update']);
 		$this->add_hook('identity_create', [$this, 'on_identity_create']);
@@ -203,6 +210,17 @@ class ident_switch extends rcube_plugin
 	public function on_smtp_connect(array $args): array
 	{
 		return $this->switcher->configure_smtp($args);
+	}
+
+	/**
+	 * Handle managesieve_connect hook: configure Sieve settings for the active account.
+	 *
+	 * @param array $args Hook arguments containing Sieve connection parameters.
+	 * @return array Modified hook arguments with updated Sieve settings.
+	 */
+	public function on_managesieve_connect(array $args): array
+	{
+		return $this->switcher->configure_managesieve($args);
 	}
 
 	/**
