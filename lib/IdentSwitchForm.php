@@ -317,6 +317,8 @@ class IdentSwitchForm
 				if (in_array(strtoupper($cfg['user'] ?? ''), ['EMAIL', 'MBOX'])) {
 					$record['ident_switch.form.common.readonly'] = 2;
 				}
+				// Override delimiter from preconfig (auto-detect if not specified)
+				$record['ident_switch.form.imap.delimiter'] = $cfg['delimiter'] ?? null;
 			}
 		} else {
 			$preconfig->apply($record);
@@ -505,6 +507,7 @@ class IdentSwitchForm
 		$map = [
 			'ident_switch.form.imap.host' => 'imap.host',
 			'ident_switch.form.imap.port' => 'imap.port',
+			'ident_switch.form.imap.delimiter' => 'imap.delimiter',
 			'ident_switch.form.imap.username' => 'imap.user',
 			'ident_switch.form.smtp.host' => 'smtp.host',
 			'ident_switch.form.smtp.port' => 'smtp.port',

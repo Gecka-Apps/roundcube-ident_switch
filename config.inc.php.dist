@@ -40,6 +40,10 @@ $config['ident_switch.preconfig'] = [
 		// Any other value is treated as 'not specified' (default).
 		'user' => 'email',
 
+		// IMAP folder hierarchy delimiter.
+		// Omit or set to null for auto-detect (recommended).
+		// 'delimiter' => '/',
+
 		// Are specified settings locked in interface or not.
 		// Default - false.
 		'readonly' => true,

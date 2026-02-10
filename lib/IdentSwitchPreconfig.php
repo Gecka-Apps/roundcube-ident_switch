@@ -51,13 +51,8 @@ class IdentSwitchPreconfig
 	/**
 	 * Apply preconfigured settings to an identity form record.
 	 *
-	 * Parses IMAP and SMTP host URLs separately to extract scheme, host,
-	 * and port, then sets the username based on the config's 'user' setting.
-	 *
-	 * Supports both new format (imap_host + smtp_host) and legacy format
-	 * (single host for both). Schemes ssl:// and tls:// are handled:
-	 * - IMAP: ssl:// is stored in host field, tls:// sets the TLS checkbox.
-	 * - SMTP: scheme is stored directly in host field.
+	 * Parses IMAP, SMTP, and Sieve host URLs to extract scheme, host,
+	 * and port, then sets the username and delimiter based on config values.
 	 *
 	 * @param array $record Identity record to modify (passed by reference).
 	 * @return bool True if the preconfig is readonly, false otherwise.
@@ -106,7 +101,12 @@ class IdentSwitchPreconfig
 				$record['ident_switch.form.common.readonly'] = $loginSet ? 2 : 1;
 			}
 
-			// Notification defaults from preconfig
+			// IMAP folder hierarchy delimiter (null or absent = auto-detect)
+		if (isset($cfg['delimiter'])) {
+			$record['ident_switch.form.imap.delimiter'] = $cfg['delimiter'];
+		}
+
+		// Notification defaults from preconfig
 			if (isset($cfg['notify_check'])) {
 				$record['ident_switch.form.notify.check'] = $cfg['notify_check'] ? 1 : 0;
 			}
