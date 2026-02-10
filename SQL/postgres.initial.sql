@@ -12,6 +12,9 @@ CREATE TABLE ident_switch
 		NOT NULL
 		REFERENCES identities(identity_id) ON DELETE CASCADE ON UPDATE CASCADE
 		UNIQUE,
+	parent_id
+		integer
+		DEFAULT NULL,
 	username
 		varchar(64),
 	password
@@ -81,3 +84,4 @@ CREATE TABLE ident_switch
 
 CREATE INDEX IX_ident_switch_user_id ON ident_switch(user_id);
 CREATE INDEX IX_ident_switch_iid ON ident_switch(iid);
+CREATE INDEX IX_ident_switch_parent_id ON ident_switch(parent_id);

@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS `ident_switch`
 		int UNSIGNED
 		NOT NULL
 		UNIQUE,
+	`parent_id`
+		int UNSIGNED
+		DEFAULT NULL,
 	`username`
 		varchar(64),
 	`password`
@@ -80,5 +83,6 @@ CREATE TABLE IF NOT EXISTS `ident_switch`
 	CONSTRAINT `fk_identity_id` FOREIGN KEY (`iid`) REFERENCES `identities`(`identity_id`) ON DELETE CASCADE ON UPDATE CASCADE,
 	PRIMARY KEY(`id`),
 	INDEX `IX_ident_switch_user_id`(`user_id`),
-	INDEX `IX_ident_switch_iid`(`iid`)
+	INDEX `IX_ident_switch_iid`(`iid`),
+	INDEX `IX_ident_switch_parent_id`(`parent_id`)
 );
