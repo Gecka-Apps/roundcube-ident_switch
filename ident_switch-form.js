@@ -46,7 +46,7 @@ $(function() {
 	});
 
 	// IMAP host → update SMTP/Sieve host placeholders
-	$("INPUT[name='_ident_switch.form.imap.host']").on('input change blur', function() {
+	$("INPUT[name='_ident_switch.form.imap.host']").on('change blur', function() {
 		var imapHost = $(this).val() || 'localhost';
 		$("INPUT[name='_ident_switch.form.smtp.host']").attr('placeholder', imapHost);
 		$("INPUT[name='_ident_switch.form.sieve.host']").attr('placeholder', imapHost);
@@ -294,7 +294,7 @@ function plugin_switchIdent_applyJsPreconfig(cfg, email) {
 		var port = cfg[proto].port;
 		var defaultPort = ident_switch_portDefaults[proto][security] || '';
 		$("INPUT[name='_ident_switch.form." + proto + ".port']").val(
-			(port && port != defaultPort) ? port : ''
+			(port && parseInt(port) !== defaultPort) ? port : ''
 		);
 	});
 

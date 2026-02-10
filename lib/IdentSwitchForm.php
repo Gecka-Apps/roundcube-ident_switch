@@ -364,21 +364,11 @@ class IdentSwitchForm
 	}
 
 	/**
-	 * Parse scheme prefix from a host string.
-	 *
-	 * @param string $host Host string, optionally prefixed with ssl:// or tls://.
-	 * @return array{scheme: string, host: string} Parsed scheme and bare host.
+	 * Delegate to ident_switch::parse_host_scheme().
 	 */
 	private static function parse_host_scheme(string $host): array
 	{
-		$lower = strtolower($host);
-		if (str_starts_with($lower, 'ssl://')) {
-			return ['scheme' => 'ssl', 'host' => substr($host, 6)];
-		}
-		if (str_starts_with($lower, 'tls://')) {
-			return ['scheme' => 'tls', 'host' => substr($host, 6)];
-		}
-		return ['scheme' => '', 'host' => $host];
+		return ident_switch::parse_host_scheme($host);
 	}
 
 	/**

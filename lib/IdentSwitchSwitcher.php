@@ -66,13 +66,7 @@ class IdentSwitchSwitcher
 			$q = $rc->db->query($sql, $identId, $rc->user->ID);
 			$r = $rc->db->fetch_assoc($q);
 			if (is_array($r)) {
-				if (!$r['username']) {
-					// Load email from identity
-					$sql = 'SELECT email FROM ' . $rc->db->table_name('identities') . ' WHERE identity_id = ?';
-					$q = $rc->db->query($sql, $r['iid']);
-					$rIid = $rc->db->fetch_assoc($q);
-					$r['username'] = $rIid['email'];
-				}
+				$r['username'] = ident_switch::resolve_username((int)$r['iid'], $r['username']);
 
 				ident_switch::write_log("Switching mailbox to one for identity with ID = {$r['iid']} (username = '{$r['username']}').");
 
@@ -95,20 +89,12 @@ class IdentSwitchSwitcher
 					}
 				}
 
-				$host = $r['imap_host'] ?: 'localhost';
-				$ssl = null;
+				$parsed = ident_switch::parse_host_scheme($r['imap_host'] ?: 'localhost');
+				$host = $parsed['host'];
+				$ssl = $parsed['scheme'] ?: null;
 
-				// Parse scheme from host field
-				$hostLower = strtolower($host);
-				if (str_starts_with($hostLower, 'ssl://')) {
-					$ssl = 'ssl';
-					$host = substr($host, 6);
-				} elseif (str_starts_with($hostLower, 'tls://')) {
-					$ssl = 'tls';
-					$host = substr($host, 6);
-				} elseif ($r['flags'] & ident_switch::DB_SECURE_IMAP_TLS) {
-					// Backward compat: old records without scheme in host
-					$ssl = 'tls';
+				if (!$ssl && ($r['flags'] & ident_switch::DB_SECURE_IMAP_TLS)) {
+					$ssl = 'tls'; // Backward compat: old records without scheme in host
 				}
 
 				$def_port = ($ssl === 'ssl') ? 993 : 143;
@@ -188,13 +174,7 @@ class IdentSwitchSwitcher
 				$iid = $r['iid'];
 			}
 
-			if (!$r['username']) {
-				// Load email from identity
-				$sql = 'SELECT email FROM ' . $rc->db->table_name('identities') . ' WHERE identity_id = ?';
-				$q = $rc->db->query($sql, $iid);
-				$rIid = $rc->db->fetch_assoc($q);
-				$r['username'] = $rIid['email'];
-			}
+			$r['username'] = ident_switch::resolve_username($iid, $r['username']);
 
 			$authMode = (int)$r['smtp_auth'];
 			if ($authMode === ident_switch::SMTP_AUTH_CUSTOM) {
@@ -264,12 +244,7 @@ class IdentSwitchSwitcher
 				return $args;
 			}
 
-			if (!$r['username']) {
-				$sql = 'SELECT email FROM ' . $rc->db->table_name('identities') . ' WHERE identity_id = ?';
-				$q = $rc->db->query($sql, $iid);
-				$rIid = $rc->db->fetch_assoc($q);
-				$r['username'] = $rIid['email'];
-			}
+			$r['username'] = ident_switch::resolve_username($iid, $r['username']);
 
 			$sieveHost = $r['sieve_host'];
 			$sievePort = $r['sieve_port'] ?: 4190;

@@ -111,20 +111,12 @@ class IdentSwitchChecker
 	{
 		$imap = new rcube_imap_generic();
 
-		$host = $identity['imap_host'] ?: 'localhost';
-		$ssl = null;
+		$parsed = ident_switch::parse_host_scheme($identity['imap_host'] ?: 'localhost');
+		$host = $parsed['host'];
+		$ssl = $parsed['scheme'] ?: null;
 
-		// Parse scheme from host field
-		$hostLower = strtolower($host);
-		if (str_starts_with($hostLower, 'ssl://')) {
-			$ssl = 'ssl';
-			$host = substr($host, 6);
-		} elseif (str_starts_with($hostLower, 'tls://')) {
-			$ssl = 'tls';
-			$host = substr($host, 6);
-		} elseif (!empty($identity['flags']) && ($identity['flags'] & ident_switch::DB_SECURE_IMAP_TLS)) {
-			// Backward compat: old records without scheme in host
-			$ssl = 'tls';
+		if (!$ssl && !empty($identity['flags']) && ($identity['flags'] & ident_switch::DB_SECURE_IMAP_TLS)) {
+			$ssl = 'tls'; // Backward compat: old records without scheme in host
 		}
 
 		$def_port = ($ssl === 'ssl') ? 993 : 143;

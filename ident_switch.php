@@ -33,7 +33,7 @@ class ident_switch extends rcube_plugin
 	/** @var int Flag: account switching is enabled. */
 	public const DB_ENABLED = 1;
 
-	/** @var int Flag: use TLS for IMAP connection. */
+	/** @var int Legacy flag: use TLS for IMAP. Read-only for backward compat; new records store scheme in host. */
 	public const DB_SECURE_IMAP_TLS = 4;
 
 	/** @var int SMTP authentication: use same credentials as IMAP. */
@@ -199,13 +199,7 @@ class ident_switch extends rcube_plugin
 				$accSelected = $r['id'];
 			}
 
-			$lbl = $r['label'];
-			if (!$lbl) {
-				$username = $r['username'] ?: $r['email'];
-				$lbl = str_contains($username, '@')
-					? $username
-					: $username . '@' . ($r['host'] ?: 'localhost');
-			}
+			$lbl = $r['label'] ?: $r['username'] ?: $r['email'];
 			$accNames[] = rcube::Q($lbl);
 		}
 
@@ -462,6 +456,44 @@ class ident_switch extends rcube_plugin
 
 		$s = trim($str);
 		return $s !== '' ? $s : null;
+	}
+
+	/**
+	 * Parse scheme prefix (ssl://, tls://) from a host string.
+	 *
+	 * @param string $host Host string, optionally prefixed with ssl:// or tls://.
+	 * @return array{scheme: string, host: string} Parsed scheme and bare host.
+	 */
+	public static function parse_host_scheme(string $host): array
+	{
+		$lower = strtolower($host);
+		if (str_starts_with($lower, 'ssl://')) {
+			return ['scheme' => 'ssl', 'host' => substr($host, 6)];
+		}
+		if (str_starts_with($lower, 'tls://')) {
+			return ['scheme' => 'tls', 'host' => substr($host, 6)];
+		}
+		return ['scheme' => '', 'host' => $host];
+	}
+
+	/**
+	 * Resolve username for an identity: use stored username or fall back to email.
+	 *
+	 * @param int         $iid      Identity ID.
+	 * @param string|null $username Stored username (may be empty).
+	 * @return string Resolved username.
+	 */
+	public static function resolve_username(int $iid, ?string $username): string
+	{
+		if (!empty($username)) {
+			return $username;
+		}
+
+		$rc = rcmail::get_instance();
+		$sql = 'SELECT email FROM ' . $rc->db->table_name('identities') . ' WHERE identity_id = ?';
+		$q = $rc->db->query($sql, $iid);
+		$r = $rc->db->fetch_assoc($q);
+		return $r['email'] ?? '';
 	}
 
 	/**
