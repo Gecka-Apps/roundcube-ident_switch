@@ -95,17 +95,23 @@ class IdentSwitchSwitcher
 					}
 				}
 
-				$def_port = 143;
-				$ssl = null;
-				if ($r['flags'] & ident_switch::DB_SECURE_IMAP_TLS) {
-					$ssl = 'tls';
-				}
-				$port = $r['imap_port'] ?: $def_port;
-
 				$host = $r['imap_host'] ?: 'localhost';
-				if ($ssl && !str_starts_with(strtolower($host), "{$ssl}://")) {
-					$host = "{$ssl}://" . $host;
+				$ssl = null;
+
+				// Parse scheme from host field
+				$hostLower = strtolower($host);
+				if (str_starts_with($hostLower, 'ssl://')) {
+					$ssl = 'ssl';
+				} elseif (str_starts_with($hostLower, 'tls://')) {
+					$ssl = 'tls';
+				} elseif ($r['flags'] & ident_switch::DB_SECURE_IMAP_TLS) {
+					// Backward compat: old records without scheme in host
+					$ssl = 'tls';
+					$host = 'tls://' . $host;
 				}
+
+				$def_port = ($ssl === 'ssl') ? 993 : 143;
+				$port = $r['imap_port'] ?: $def_port;
 
 				$delimiter = $r['imap_delimiter'] ?: null;
 
@@ -164,7 +170,7 @@ class IdentSwitchSwitcher
 
 		$rc = rcmail::get_instance();
 
-		$sql = 'SELECT smtp_host, flags, smtp_port, username, smtp_auth, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
+		$sql = 'SELECT smtp_host, smtp_port, username, smtp_auth, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
 		$q = $rc->db->query($sql, $iid, $rc->user->ID);
 		$r = $rc->db->fetch_assoc($q);
 		if (is_array($r)) {
@@ -179,17 +185,8 @@ class IdentSwitchSwitcher
 			$args['smtp_user'] = $r['username'];
 			$args['smtp_pass'] = $r['smtp_auth'] == ident_switch::SMTP_AUTH_IMAP ? $rc->decrypt($r['password']) : '';
 
-			// In RC 1.6+ smtp_server was renamed to smtp_host and includes port
+			// Host already contains scheme (ssl:// or tls://) from form
 			$smtpHost = $r['smtp_host'] ?: 'localhost';
-
-			if ($r['flags'] & ident_switch::DB_SECURE_IMAP_TLS) {
-				if (str_contains($smtpHost, ':')) {
-					ident_switch::write_log('SMTP server already contains protocol, ignoring TLS flag.');
-				} else {
-					$smtpHost = 'tls://' . $smtpHost;
-				}
-			}
-
 			$smtpPort = $r['smtp_port'] ?: 587;
 			$args['smtp_host'] = $smtpHost . ':' . $smtpPort;
 		}

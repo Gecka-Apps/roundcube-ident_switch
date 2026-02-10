@@ -43,15 +43,15 @@ class IdentSwitchForm
 	 * Build the IMAP form fields for identity settings.
 	 *
 	 * @param array $record Identity record data used for placeholders.
-	 * @return array Form field definitions for IMAP host, port, TLS, username, password, delimiter.
+	 * @return array Form field definitions for IMAP host, port, security, username, password, delimiter.
 	 */
-	public static function get_imap_fields(array &$record): array
+	public function get_imap_fields(array &$record): array
 	{
 		$prefix = 'ident_switch.form.imap.';
 		return [
 			$prefix . 'host' => ['type' => 'text', 'size' => 64, 'placeholder' => 'localhost'],
-			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 143],
-			$prefix . 'tls' => ['type' => 'checkbox'],
+			$prefix . 'security' => ['value' => $this->build_security_select($prefix, $record, 'ssl')],
+			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 993],
 			$prefix . 'username' => ['type' => 'text', 'size' => 64, 'placeholder' => $record['email'] ?? ''],
 			$prefix . 'password' => ['type' => 'password', 'size' => 64],
 			$prefix . 'delimiter' => ['type' => 'text', 'size' => 1, 'placeholder' => 'Auto'],
@@ -74,6 +74,7 @@ class IdentSwitchForm
 
 		return [
 			$prefix . 'host' => ['type' => 'text', 'size' => 64, 'placeholder' => 'localhost'],
+			$prefix . 'security' => ['value' => $this->build_security_select($prefix, $record, 'tls')],
 			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 587],
 			$prefix . 'auth' => ['value' => $authType->show([$record['ident_switch.form.smtp.auth'] ?? null])],
 		];
@@ -95,6 +96,7 @@ class IdentSwitchForm
 
 		return [
 			$prefix . 'host' => ['type' => 'text', 'size' => 64, 'placeholder' => 'localhost'],
+			$prefix . 'security' => ['value' => $this->build_security_select($prefix, $record, 'tls')],
 			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 4190],
 			$prefix . 'auth' => ['value' => $authType->show([$record['ident_switch.form.sieve.auth'] ?? null])],
 		];
@@ -140,6 +142,67 @@ class IdentSwitchForm
 			$prefix . 'sound' => ['value' => $triState('sound')],
 			$prefix . 'desktop' => ['value' => $triState('desktop')],
 		];
+	}
+
+	/**
+	 * Build a security dropdown select for a protocol section.
+	 *
+	 * @param string $prefix  Form field prefix (e.g. 'ident_switch.form.imap.').
+	 * @param array  $record  Identity record data.
+	 * @param string $default Default security value ('', 'tls', 'ssl').
+	 * @return string Rendered HTML select element.
+	 */
+	private function build_security_select(string $prefix, array &$record, string $default): string
+	{
+		$select = new html_select(['name' => "_{$prefix}security"]);
+		$select->add($this->plugin->gettext('form.security.none'), '');
+		$select->add($this->plugin->gettext('form.security.starttls'), 'tls');
+		$select->add($this->plugin->gettext('form.security.ssl'), 'ssl');
+
+		$current = $record[$prefix . 'security'] ?? $default;
+		$proto = str_replace('ident_switch.form.', '', rtrim($prefix, '.'));
+		$hidden = $current !== '' ? ' style="display:none"' : '';
+		$warning = '<div id="ident-switch-security-warning-' . $proto . '" class="boxwarning"' . $hidden . '>'
+			. rcube::Q($this->plugin->gettext('form.security.none_warning'))
+			. '</div>';
+
+		return $select->show($current) . $warning;
+	}
+
+	/**
+	 * Parse scheme prefix from a host string.
+	 *
+	 * @param string $host Host string, optionally prefixed with ssl:// or tls://.
+	 * @return array{scheme: string, host: string} Parsed scheme and bare host.
+	 */
+	private static function parse_host_scheme(string $host): array
+	{
+		$lower = strtolower($host);
+		if (str_starts_with($lower, 'ssl://')) {
+			return ['scheme' => 'ssl', 'host' => substr($host, 6)];
+		}
+		if (str_starts_with($lower, 'tls://')) {
+			return ['scheme' => 'tls', 'host' => substr($host, 6)];
+		}
+		return ['scheme' => '', 'host' => $host];
+	}
+
+	/**
+	 * Compose a host string with scheme prefix.
+	 *
+	 * @param string|null $host     Bare host name.
+	 * @param string|null $security Security type ('', 'tls', 'ssl').
+	 * @return string|null Host with scheme prefix, or null if host is empty.
+	 */
+	private static function compose_host_scheme(?string $host, ?string $security): ?string
+	{
+		if ($host === null || $host === '') {
+			return $host;
+		}
+		if ($security === 'ssl' || $security === 'tls') {
+			return $security . '://' . $host;
+		}
+		return $host;
 	}
 
 	/**
@@ -205,7 +268,22 @@ class IdentSwitchForm
 
 			// Parse flags
 			$record['ident_switch.form.common.enabled'] = (bool)($row['flags'] & ident_switch::DB_ENABLED);
-			$record['ident_switch.form.imap.tls'] = (bool)($row['flags'] & ident_switch::DB_SECURE_IMAP_TLS);
+
+			// Parse host schemes into separate security fields
+			foreach (['imap', 'smtp', 'sieve'] as $proto) {
+				$key = "ident_switch.form.{$proto}.host";
+				$hostVal = $record[$key] ?? '';
+				if ($hostVal !== '') {
+					$parsed = self::parse_host_scheme($hostVal);
+					$record[$key] = $parsed['host'];
+					$record["ident_switch.form.{$proto}.security"] = $parsed['scheme'];
+				}
+			}
+
+			// Backward compat: if IMAP host had no scheme but TLS flag was set
+			if (empty($record['ident_switch.form.imap.security']) && ($row['flags'] & ident_switch::DB_SECURE_IMAP_TLS)) {
+				$record['ident_switch.form.imap.security'] = 'tls';
+			}
 
 			// Set readonly if needed
 			$cfg = $preconfig->get($record['email']);
@@ -225,7 +303,7 @@ class IdentSwitchForm
 		];
 		$args['form']['ident_switch.imap'] = [
 			'name' => $this->plugin->gettext('form.imap.caption'),
-			'content' => self::get_imap_fields($record),
+			'content' => $this->get_imap_fields($record),
 		];
 		$args['form']['ident_switch.smtp'] = [
 			'name' => $this->plugin->gettext('form.smtp.caption'),
@@ -414,11 +492,6 @@ class IdentSwitchForm
 				$data[$dataKey] = $record[$recordKey];
 			}
 		}
-
-		// Handle TLS flag from preconfig
-		if (!empty($record['ident_switch.form.imap.tls'])) {
-			$data['flags'] |= ident_switch::DB_SECURE_IMAP_TLS;
-		}
 	}
 
 	/**
@@ -439,7 +512,10 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
+		// Validate and compose IMAP host with security scheme
 		$retVal['imap.host'] = self::get_field_value('imap', 'host');
+		$imapSecurity = self::get_field_value('imap', 'security') ?? '';
+		$retVal['imap.host'] = self::compose_host_scheme($retVal['imap.host'], $imapSecurity);
 		if (strlen($retVal['imap.host'] ?? '') > 64) {
 			$retVal['err'] = 'host.long';
 			return $retVal;
@@ -467,7 +543,10 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
+		// Validate and compose SMTP host with security scheme
 		$retVal['smtp.host'] = self::get_field_value('smtp', 'host');
+		$smtpSecurity = self::get_field_value('smtp', 'security') ?? '';
+		$retVal['smtp.host'] = self::compose_host_scheme($retVal['smtp.host'], $smtpSecurity);
 		if (strlen($retVal['smtp.host'] ?? '') > 64) {
 			$retVal['err'] = 'host.long';
 			return $retVal;
@@ -489,7 +568,10 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
+		// Validate and compose Sieve host with security scheme
 		$retVal['sieve.host'] = self::get_field_value('sieve', 'host');
+		$sieveSecurity = self::get_field_value('sieve', 'security') ?? '';
+		$retVal['sieve.host'] = self::compose_host_scheme($retVal['sieve.host'], $sieveSecurity);
 		if (strlen($retVal['sieve.host'] ?? '') > 64) {
 			$retVal['err'] = 'host.long';
 			return $retVal;
@@ -526,13 +608,8 @@ class IdentSwitchForm
 		// Get also password
 		$retVal['imap.pass'] = self::get_field_value('imap', 'password', false, true);
 
-		// Parse secure settings
+		// Flags: only enabled, security is now in host field scheme
 		$retVal['flags'] = ident_switch::DB_ENABLED;
-
-		$tls = self::get_field_value('imap', 'tls', false);
-		if ($tls) {
-			$retVal['flags'] |= ident_switch::DB_SECURE_IMAP_TLS;
-		}
 
 		return $retVal;
 	}

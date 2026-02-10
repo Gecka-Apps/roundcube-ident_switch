@@ -23,8 +23,8 @@ $labels['form.imap.caption'] = 'IMAP';
 // Server host name
 $labels['form.imap.host'] = 'Адрес сервера';
 
-// Secure connection (TLS)
-$labels['form.imap.tls'] = 'Безопасное подключение (TLS)';
+// Security
+$labels['form.imap.security'] = 'Безопасность';
 
 // Port
 $labels['form.imap.port'] = 'Порт';
@@ -48,8 +48,8 @@ $labels['form.smtp.caption'] = 'SMTP';
 // Server host name
 $labels['form.smtp.host'] = 'Адрес сервера';
 
-// Secure connection (TLS)
-$labels['form.smtp.tls'] = 'Безопасное подключение (TLS)';
+// Security
+$labels['form.smtp.security'] = 'Безопасность';
 
 // Port
 $labels['form.smtp.port'] = 'Порт';
@@ -69,6 +69,9 @@ $labels['form.sieve.caption'] = 'Sieve';
 
 // Server host name
 $labels['form.sieve.host'] = 'Адрес сервера';
+
+// Security
+$labels['form.sieve.security'] = 'Безопасность';
 
 // Port
 $labels['form.sieve.port'] = 'Порт';
@@ -109,6 +112,20 @@ $labels['form.notify.off'] = 'Выключено';
 
 // Requires newmail_notifier plugin
 $labels['form.notify.requires_newmail_notifier'] = 'Уведомления требуют плагин newmail_notifier. Пожалуйста, включите его или обратитесь к администратору.';
+
+
+// Security options
+// None
+$labels['form.security.none'] = 'Нет';
+
+// STARTTLS
+$labels['form.security.starttls'] = 'STARTTLS';
+
+// SSL/TLS
+$labels['form.security.ssl'] = 'SSL/TLS';
+
+// None warning
+$labels['form.security.none_warning'] = 'Незашифрованные соединения небезопасны. Ваши учётные данные и письма могут быть перехвачены. По возможности используйте SSL/TLS или STARTTLS.';
 
 
 // Errors

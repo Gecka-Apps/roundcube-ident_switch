@@ -23,8 +23,8 @@ $labels['form.imap.caption'] = 'IMAP';
 // Server host name
 $labels['form.imap.host'] = 'Ime oz. naslov IMAP strežnika';
 
-// Secure connection (TLS)
-$labels['form.imap.tls'] = 'Varna povezava (TLS)';
+// Security
+$labels['form.imap.security'] = 'Varnost';
 
 // Port
 $labels['form.imap.port'] = 'Vrata';
@@ -48,8 +48,8 @@ $labels['form.smtp.caption'] = 'SMTP';
 // Server host name
 $labels['form.smtp.host'] = 'Ime oz. naslov SMTP strežnika';
 
-// Secure connection (TLS)
-$labels['form.smtp.tls'] = 'Varna povezava (TLS)';
+// Security
+$labels['form.smtp.security'] = 'Varnost';
 
 // Port
 $labels['form.smtp.port'] = 'Vrata';
@@ -69,6 +69,9 @@ $labels['form.sieve.caption'] = 'Sieve';
 
 // Server host name
 $labels['form.sieve.host'] = 'Ime oz. naslov Sieve strežnika';
+
+// Security
+$labels['form.sieve.security'] = 'Varnost';
 
 // Port
 $labels['form.sieve.port'] = 'Vrata';
@@ -109,6 +112,20 @@ $labels['form.notify.off'] = 'Izključeno';
 
 // Requires newmail_notifier plugin
 $labels['form.notify.requires_newmail_notifier'] = 'Obvestila zahtevajo vtičnik newmail_notifier. Prosimo, omogočite ga ali se obrnite na skrbnika.';
+
+
+// Security options
+// None
+$labels['form.security.none'] = 'Brez';
+
+// STARTTLS
+$labels['form.security.starttls'] = 'STARTTLS';
+
+// SSL/TLS
+$labels['form.security.ssl'] = 'SSL/TLS';
+
+// None warning
+$labels['form.security.none_warning'] = 'Nešifrirane povezave so nevarne. Vaše poverilnice in e-pošta so lahko prestreženi. Kadar koli je mogoče, uporabite SSL/TLS ali STARTTLS.';
 
 
 // Errors

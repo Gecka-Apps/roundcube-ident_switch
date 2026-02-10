@@ -73,57 +73,24 @@ class IdentSwitchPreconfig
 		if (is_array($cfg)) {
 			ident_switch::write_log("Applying predefined configuration for '{$email}'.");
 
-			// IMAP: use imap_host, fallback to host
-			$imapUrl = $cfg['imap_host'] ?? $cfg['host'] ?? '';
-			if (!empty($imapUrl)) {
-				$urlArr = parse_url($imapUrl);
+			// Parse each protocol URL into host, security, and port
+			$protocols = [
+				'imap' => $cfg['imap_host'] ?? $cfg['host'] ?? '',
+				'smtp' => $cfg['smtp_host'] ?? $cfg['host'] ?? '',
+				'sieve' => $cfg['sieve_host'] ?? '',
+			];
+
+			foreach ($protocols as $proto => $url) {
+				if (empty($url)) {
+					continue;
+				}
+				$urlArr = parse_url($url);
 				$host = !empty($urlArr['host']) ? rcube::Q($urlArr['host'], 'url') : '';
 				$scheme = strtolower($urlArr['scheme'] ?? '');
 
-				if ($scheme === 'ssl') {
-					$record['ident_switch.form.imap.host'] = 'ssl://' . $host;
-					$record['ident_switch.form.imap.tls'] = false;
-				} elseif ($scheme === 'tls') {
-					$record['ident_switch.form.imap.host'] = $host;
-					$record['ident_switch.form.imap.tls'] = true;
-				} else {
-					$record['ident_switch.form.imap.host'] = $host;
-					$record['ident_switch.form.imap.tls'] = false;
-				}
-
-				$record['ident_switch.form.imap.port'] = !empty($urlArr['port']) ? intval($urlArr['port']) : '';
-			}
-
-			// SMTP: use smtp_host, fallback to host
-			$smtpUrl = $cfg['smtp_host'] ?? $cfg['host'] ?? '';
-			if (!empty($smtpUrl)) {
-				$urlArr = parse_url($smtpUrl);
-				$host = !empty($urlArr['host']) ? rcube::Q($urlArr['host'], 'url') : '';
-				$scheme = strtolower($urlArr['scheme'] ?? '');
-
-				if ($scheme === 'tls' || $scheme === 'ssl') {
-					$record['ident_switch.form.smtp.host'] = $scheme . '://' . $host;
-				} else {
-					$record['ident_switch.form.smtp.host'] = $host;
-				}
-
-				$record['ident_switch.form.smtp.port'] = !empty($urlArr['port']) ? intval($urlArr['port']) : '';
-			}
-
-			// Sieve: use sieve_host only (no fallback — sieve is optional)
-			$sieveUrl = $cfg['sieve_host'] ?? '';
-			if (!empty($sieveUrl)) {
-				$urlArr = parse_url($sieveUrl);
-				$host = !empty($urlArr['host']) ? rcube::Q($urlArr['host'], 'url') : '';
-				$scheme = strtolower($urlArr['scheme'] ?? '');
-
-				if ($scheme === 'tls' || $scheme === 'ssl') {
-					$record['ident_switch.form.sieve.host'] = $scheme . '://' . $host;
-				} else {
-					$record['ident_switch.form.sieve.host'] = $host;
-				}
-
-				$record['ident_switch.form.sieve.port'] = !empty($urlArr['port']) ? intval($urlArr['port']) : '';
+				$record["ident_switch.form.{$proto}.host"] = $host;
+				$record["ident_switch.form.{$proto}.security"] = in_array($scheme, ['ssl', 'tls']) ? $scheme : '';
+				$record["ident_switch.form.{$proto}.port"] = !empty($urlArr['port']) ? intval($urlArr['port']) : '';
 			}
 
 			$loginSet = false;

@@ -23,8 +23,8 @@ $labels['form.imap.caption'] = 'IMAP';
 // Server host name
 $labels['form.imap.host'] = 'Servernaam';
 
-// Secure connection (TLS)
-$labels['form.imap.tls'] = 'Beveiligde verbinding (TLS)';
+// Security
+$labels['form.imap.security'] = 'Beveiliging';
 
 // Port
 $labels['form.imap.port'] = 'Poortnummer';
@@ -48,8 +48,8 @@ $labels['form.smtp.caption'] = 'SMTP';
 // Server host name
 $labels['form.smtp.host'] = 'Servernaam';
 
-// Secure connection (TLS)
-$labels['form.smtp.tls'] = 'Beveiligde verbinding (TLS)';
+// Security
+$labels['form.smtp.security'] = 'Beveiliging';
 
 // Port
 $labels['form.smtp.port'] = 'Poortnummer';
@@ -69,6 +69,9 @@ $labels['form.sieve.caption'] = 'Sieve';
 
 // Server host name
 $labels['form.sieve.host'] = 'Servernaam';
+
+// Security
+$labels['form.sieve.security'] = 'Beveiliging';
 
 // Port
 $labels['form.sieve.port'] = 'Poortnummer';
@@ -109,6 +112,20 @@ $labels['form.notify.off'] = 'Uit';
 
 // Requires newmail_notifier plugin
 $labels['form.notify.requires_newmail_notifier'] = 'Meldingen vereisen de newmail_notifier-plug-in. Schakel deze in of neem contact op met uw beheerder.';
+
+
+// Security options
+// None
+$labels['form.security.none'] = 'Geen';
+
+// STARTTLS
+$labels['form.security.starttls'] = 'STARTTLS';
+
+// SSL/TLS
+$labels['form.security.ssl'] = 'SSL/TLS';
+
+// None warning
+$labels['form.security.none_warning'] = 'Onversleutelde verbindingen zijn onveilig. Uw inloggegevens en e-mails kunnen worden onderschept. Gebruik waar mogelijk SSL/TLS of STARTTLS.';
 
 
 // Errors

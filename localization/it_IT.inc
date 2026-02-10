@@ -23,8 +23,8 @@ $labels['form.imap.caption'] = 'IMAP';
 // Server host name
 $labels['form.imap.host'] = 'Nome del server';
 
-// Secure connection (TLS)
-$labels['form.imap.tls'] = 'Connessione sicura (TLS)';
+// Security
+$labels['form.imap.security'] = 'Sicurezza';
 
 // Port
 $labels['form.imap.port'] = 'Porta';
@@ -48,8 +48,8 @@ $labels['form.smtp.caption'] = 'SMTP';
 // Server host name
 $labels['form.smtp.host'] = 'Nome del server';
 
-// Secure connection (TLS)
-$labels['form.smtp.tls'] = 'Connessione sicura (TLS)';
+// Security
+$labels['form.smtp.security'] = 'Sicurezza';
 
 // Port
 $labels['form.smtp.port'] = 'Porta';
@@ -69,6 +69,9 @@ $labels['form.sieve.caption'] = 'Sieve';
 
 // Server host name
 $labels['form.sieve.host'] = 'Nome del server';
+
+// Security
+$labels['form.sieve.security'] = 'Sicurezza';
 
 // Port
 $labels['form.sieve.port'] = 'Porta';
@@ -109,6 +112,20 @@ $labels['form.notify.off'] = 'Disattivo';
 
 // Requires newmail_notifier plugin
 $labels['form.notify.requires_newmail_notifier'] = 'Le notifiche richiedono il plugin newmail_notifier. Abilitarlo o contattare l\'amministratore.';
+
+
+// Security options
+// None
+$labels['form.security.none'] = 'Nessuna';
+
+// STARTTLS
+$labels['form.security.starttls'] = 'STARTTLS';
+
+// SSL/TLS
+$labels['form.security.ssl'] = 'SSL/TLS';
+
+// None warning
+$labels['form.security.none_warning'] = 'Le connessioni non crittografate non sono sicure. Le credenziali e le email possono essere intercettate. Utilizzare SSL/TLS o STARTTLS quando possibile.';
 
 
 // Errors

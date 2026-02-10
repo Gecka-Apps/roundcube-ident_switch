@@ -23,8 +23,8 @@ $labels['form.imap.caption'] = 'IMAP';
 // Server host name
 $labels['form.imap.host'] = 'Servername';
 
-// Secure connection (TLS)
-$labels['form.imap.tls'] = 'Sichere Verbindung (TLS)';
+// Security
+$labels['form.imap.security'] = 'Sicherheit';
 
 // Port
 $labels['form.imap.port'] = 'Port';
@@ -48,8 +48,8 @@ $labels['form.smtp.caption'] = 'SMTP';
 // Server host name
 $labels['form.smtp.host'] = 'Servername';
 
-// Secure connection (TLS)
-$labels['form.smtp.tls'] = 'Sichere Verbindung (TLS)';
+// Security
+$labels['form.smtp.security'] = 'Sicherheit';
 
 // Port
 $labels['form.smtp.port'] = 'Port';
@@ -69,6 +69,9 @@ $labels['form.sieve.caption'] = 'Sieve';
 
 // Server host name
 $labels['form.sieve.host'] = 'Servername';
+
+// Security
+$labels['form.sieve.security'] = 'Sicherheit';
 
 // Port
 $labels['form.sieve.port'] = 'Port';
@@ -109,6 +112,20 @@ $labels['form.notify.off'] = 'Aus';
 
 // Requires newmail_notifier plugin
 $labels['form.notify.requires_newmail_notifier'] = 'Benachrichtigungen erfordern das Plugin newmail_notifier. Bitte aktivieren Sie es oder kontaktieren Sie Ihren Administrator.';
+
+
+// Security options
+// None
+$labels['form.security.none'] = 'Keine';
+
+// STARTTLS
+$labels['form.security.starttls'] = 'STARTTLS';
+
+// SSL/TLS
+$labels['form.security.ssl'] = 'SSL/TLS';
+
+// None warning
+$labels['form.security.none_warning'] = 'Unverschlüsselte Verbindungen sind unsicher. Ihre Anmeldedaten und E-Mails können abgefangen werden. Verwenden Sie nach Möglichkeit SSL/TLS oder STARTTLS.';
 
 
 // Errors

@@ -23,8 +23,8 @@ $labels['form.imap.caption'] = 'IMAP';
 // Server host name
 $labels['form.imap.host'] = 'Serveur';
 
-// Secure connection (TLS)
-$labels['form.imap.tls'] = 'Connexion sécurisée (TLS)';
+// Security
+$labels['form.imap.security'] = 'Sécurité';
 
 // Port
 $labels['form.imap.port'] = 'Port';
@@ -48,8 +48,8 @@ $labels['form.smtp.caption'] = 'SMTP';
 // Server host name
 $labels['form.smtp.host'] = 'Serveur';
 
-// Secure connection (TLS)
-$labels['form.smtp.tls'] = 'Connexion sécurisée (TLS)';
+// Security
+$labels['form.smtp.security'] = 'Sécurité';
 
 // Port
 $labels['form.smtp.port'] = 'Port';
@@ -69,6 +69,9 @@ $labels['form.sieve.caption'] = 'Sieve';
 
 // Server host name
 $labels['form.sieve.host'] = 'Serveur';
+
+// Security
+$labels['form.sieve.security'] = 'Sécurité';
 
 // Port
 $labels['form.sieve.port'] = 'Port';
@@ -109,6 +112,13 @@ $labels['form.notify.off'] = 'Désactivé';
 
 // Requires newmail_notifier plugin
 $labels['form.notify.requires_newmail_notifier'] = 'Les notifications nécessitent le plugin newmail_notifier. Veuillez l\'activer ou contacter votre administrateur.';
+
+
+// Security options
+$labels['form.security.none'] = 'Aucune';
+$labels['form.security.starttls'] = 'STARTTLS';
+$labels['form.security.ssl'] = 'SSL/TLS';
+$labels['form.security.none_warning'] = 'Les connexions non chiffrées sont vulnérables. Vos identifiants et emails peuvent être interceptés. Utilisez SSL/TLS ou STARTTLS autant que possible.';
 
 
 // Errors
