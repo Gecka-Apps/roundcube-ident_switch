@@ -38,6 +38,9 @@
         "roundcube/plugin-installer": ">=0.3.0",
         "ext-ctype": "*"
     },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.0"
+    },
     "conflict": {
         "boressoft/ident_switch": "*",
         "elm/identity_smtp": "*",
@@ -50,6 +53,15 @@
         "roundcube": {
             "min-version": "1.6",
             "sql-dir": "SQL"
+        }
+    },
+    "scripts": {
+        "phpcs": "phpcs",
+        "phpcbf": "phpcbf"
+    },
+    "config": {
+        "allow-plugins": {
+            "roundcube/plugin-installer": true
         }
     }
 }
