@@ -139,6 +139,17 @@ class IdentSwitchPreconfig
 				$record['ident_switch.form.common.readonly'] = $loginSet ? 2 : 1;
 			}
 
+			// Notification defaults from preconfig
+			if (isset($cfg['notify_check'])) {
+				$record['ident_switch.form.notify.check'] = $cfg['notify_check'] ? 1 : 0;
+			}
+			foreach (['notify_basic', 'notify_sound', 'notify_desktop'] as $key) {
+				if (isset($cfg[$key])) {
+					$formKey = 'ident_switch.form.notify.' . substr($key, 7);
+					$record[$formKey] = $cfg[$key] === null ? '' : ($cfg[$key] ? '1' : '0');
+				}
+			}
+
 			return (bool)($cfg['readonly'] ?? false);
 		}
 

@@ -83,6 +83,34 @@ $labels['form.sieve.auth.imap'] = 'Zoals IMAP';
 $labels['form.sieve.auth.none'] = 'Geen';
 
 
+// Notifications
+$labels['form.notify.caption'] = 'Meldingen';
+
+// Check for new mail
+$labels['form.notify.check'] = 'Controleer op nieuwe berichten';
+
+// Focus / favicon
+$labels['form.notify.basic'] = 'Focus / favicon';
+
+// Sound
+$labels['form.notify.sound'] = 'Geluid';
+
+// Desktop notification
+$labels['form.notify.desktop'] = 'Bureaubladmelding';
+
+// Use default
+$labels['form.notify.default'] = 'standaard';
+
+// On
+$labels['form.notify.on'] = 'Aan';
+
+// Off
+$labels['form.notify.off'] = 'Uit';
+
+// Requires newmail_notifier plugin
+$labels['form.notify.requires_newmail_notifier'] = 'Meldingen vereisen de newmail_notifier-plug-in. Schakel deze in of neem contact op met uw beheerder.';
+
+
 // Errors
 
 // Value in \'Server host name\' field is too long (64 chars max).

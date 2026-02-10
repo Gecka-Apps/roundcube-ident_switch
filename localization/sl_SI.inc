@@ -83,6 +83,34 @@ $labels['form.sieve.auth.imap'] = 'Tako kot IMAP';
 $labels['form.sieve.auth.none'] = 'Brez';
 
 
+// Notifications
+$labels['form.notify.caption'] = 'Obvestila';
+
+// Check for new mail
+$labels['form.notify.check'] = 'Preveri nova sporočila';
+
+// Focus / favicon
+$labels['form.notify.basic'] = 'Fokus / favicon';
+
+// Sound
+$labels['form.notify.sound'] = 'Zvok';
+
+// Desktop notification
+$labels['form.notify.desktop'] = 'Namizno obvestilo';
+
+// Use default
+$labels['form.notify.default'] = 'privzeto';
+
+// On
+$labels['form.notify.on'] = 'Vključeno';
+
+// Off
+$labels['form.notify.off'] = 'Izključeno';
+
+// Requires newmail_notifier plugin
+$labels['form.notify.requires_newmail_notifier'] = 'Obvestila zahtevajo vtičnik newmail_notifier. Prosimo, omogočite ga ali se obrnite na skrbnika.';
+
+
 // Errors
 
 // Value in \'Server host name\' field is too long (64 chars max).

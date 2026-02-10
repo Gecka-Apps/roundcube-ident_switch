@@ -34,6 +34,9 @@ class IdentSwitchSwitcher
 		$rc->session->remove('folders');
 		$rc->session->remove('unseen_count');
 
+		// Reset baseline for the target account so delta goes back to 0
+		$this->reset_baseline($identId == -1 ? 0 : null, $rc, $identId);
+
 		if ($identId == -1) {
 			// Switch to main account
 			ident_switch::write_log('Switching mailbox back to default.');
@@ -345,5 +348,35 @@ class IdentSwitchSwitcher
 			}
 		}
 		return $args;
+	}
+
+	/**
+	 * Reset the baseline for a target account so delta display resets to 0.
+	 *
+	 * For primary account (identId=-1), iid is 0.
+	 * For secondary accounts, look up iid from the ident_switch table.
+	 *
+	 * @param int|null  $iid     Known iid (0 for primary), or null to look up.
+	 * @param rcmail    $rc      Roundcube instance.
+	 * @param mixed     $identId The ident_switch.id value for secondary accounts.
+	 */
+	private function reset_baseline(?int $iid, rcmail $rc, mixed $identId): void
+	{
+		if ($iid === null) {
+			// Look up iid from ident_switch table for secondary account
+			$sql = 'SELECT iid FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE id = ? AND user_id = ?';
+			$q = $rc->db->query($sql, $identId, $rc->user->ID);
+			$r = $rc->db->fetch_assoc($q);
+			if (!$r) {
+				return;
+			}
+			$iid = (int)$r['iid'];
+		}
+
+		$counts = $_SESSION['ident_switch_counts'] ?? [];
+		if (isset($counts[$iid])) {
+			unset($counts[$iid]['baseline']);
+			$_SESSION['ident_switch_counts'] = $counts;
+		}
 	}
 }

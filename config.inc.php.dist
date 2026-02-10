@@ -50,3 +50,23 @@ $config['ident_switch.preconfig'] = [
 		'user' => 'mbox',
 	],
 ];
+
+/*
+ * Enable background mail checking across secondary accounts.
+ * Shows unread counts in the account switcher and a badge for new messages.
+ * Default: true.
+ */
+$config['ident_switch.check_mail'] = true;
+
+/*
+ * Round-robin mode: check one identity per refresh cycle instead of all.
+ * Useful with many accounts to reduce IMAP connections per refresh.
+ * Default: false (all identities checked every cycle).
+ */
+$config['ident_switch.round_robin'] = false;
+
+/*
+ * Hide the warning shown to users when the newmail_notifier plugin is not active.
+ * Default: false (warning is displayed).
+ */
+$config['ident_switch.hide_notifier_warning'] = false;

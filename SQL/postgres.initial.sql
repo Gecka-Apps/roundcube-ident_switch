@@ -47,6 +47,22 @@ CREATE TABLE ident_switch
 		smallint
 		NOT NULL
 		DEFAULT(1),
+	notify_check
+		smallint
+		NOT NULL
+		DEFAULT(1),
+	notify_basic
+		smallint
+		DEFAULT NULL,
+	notify_sound
+		smallint
+		DEFAULT NULL,
+	notify_desktop
+		smallint
+		DEFAULT NULL,
+	notify_sound_url
+		varchar(255)
+		DEFAULT NULL,
 	drafts_mbox
 		varchar(64),
 	sent_mbox

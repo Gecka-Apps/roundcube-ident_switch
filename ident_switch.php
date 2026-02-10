@@ -17,6 +17,7 @@
 require_once __DIR__ . '/lib/IdentSwitchPreconfig.php';
 require_once __DIR__ . '/lib/IdentSwitchForm.php';
 require_once __DIR__ . '/lib/IdentSwitchSwitcher.php';
+require_once __DIR__ . '/lib/IdentSwitchChecker.php';
 
 class ident_switch extends rcube_plugin
 {
@@ -47,9 +48,16 @@ class ident_switch extends rcube_plugin
 	/** @var int Sieve authentication: no authentication required. */
 	public const SIEVE_AUTH_NONE = 2;
 
+	/** @var int Notification checking: enabled. */
+	public const NOTIFY_CHECK_ENABLED = 1;
+
+	/** @var int Notification checking: disabled. */
+	public const NOTIFY_CHECK_DISABLED = 0;
+
 	private IdentSwitchForm $form;
 	private IdentSwitchSwitcher $switcher;
 	private IdentSwitchPreconfig $preconfig;
+	private IdentSwitchChecker $checker;
 
 	/**
 	 * Initialize plugin: register hooks, actions, and save default folder config.
@@ -59,9 +67,11 @@ class ident_switch extends rcube_plugin
 		$this->form = new IdentSwitchForm($this);
 		$this->switcher = new IdentSwitchSwitcher();
 		$this->preconfig = new IdentSwitchPreconfig($this);
+		$this->checker = new IdentSwitchChecker();
 
 		$this->add_hook('startup', [$this, 'on_startup']);
 		$this->add_hook('render_page', [$this, 'on_render_page']);
+		$this->add_hook('refresh', [$this, 'on_refresh']);
 		$this->add_hook('smtp_connect', [$this, 'on_smtp_connect']);
 		$this->add_hook('managesieve_connect', [$this, 'on_managesieve_connect']);
 		$this->add_hook('identity_form', [$this, 'on_identity_form']);
@@ -74,6 +84,8 @@ class ident_switch extends rcube_plugin
 		$this->add_hook('preferences_save', [$this, 'on_special_folders_update']);
 
 		$this->register_action('plugin.ident_switch.switch', [$this, 'on_switch']);
+
+		$this->load_config();
 
 		$rc = rcmail::get_instance();
 		foreach (rcube_storage::$folder_types as $type) {
@@ -131,6 +143,10 @@ class ident_switch extends rcube_plugin
 			default => null,
 		};
 
+		if ($rc->task === 'mail') {
+			$this->include_stylesheet('ident_switch.css');
+		}
+
 		return $args;
 	}
 
@@ -138,7 +154,7 @@ class ident_switch extends rcube_plugin
 	 * Render the account switcher dropdown in the mail view.
 	 *
 	 * Queries the database for all enabled alternative accounts and generates
-	 * an HTML select element that is injected into the page footer.
+	 * an HTML select element with an unread badge, injected into the page footer.
 	 *
 	 * @param rcmail $rc    Roundcube instance.
 	 * @param array  $args  Hook arguments for page rendering.
@@ -160,6 +176,7 @@ class ident_switch extends rcube_plugin
 		$accNames = [$_SESSION['global_alias'] ?? $rc->user->data['username']];
 		$accValues = [-1];
 		$accSelected = -1;
+		$iidMap = [0 => -1]; // primary account: iid 0 → select value -1
 
 		// Get list of alternative accounts
 		$sql = "SELECT "
@@ -171,15 +188,14 @@ class ident_switch extends rcube_plugin
 		$qRec = $rc->db->query($sql, $rc->user->data['user_id'], self::DB_ENABLED);
 		while ($r = $rc->db->fetch_assoc($qRec)) {
 			$accValues[] = $r['id'];
+			$iidMap[$r['iid']] = $r['id'];
 			if ($iid == $r['iid']) {
 				$accSelected = $r['id'];
 			}
 
-			// Make label
 			$lbl = $r['label'];
 			if (!$lbl) {
 				$username = $r['username'] ?: $r['email'];
-
 				$lbl = str_contains($username, '@')
 					? $username
 					: $username . '@' . ($r['host'] ?: 'localhost');
@@ -187,18 +203,60 @@ class ident_switch extends rcube_plugin
 			$accNames[] = rcube::Q($lbl);
 		}
 
-		// Render UI if user has extra accounts
-		if (count($accValues) > 1) {
-			$this->include_script('ident_switch-switch.js');
-
-			$select = new html_select([
-				'id' => 'plugin-ident_switch-account',
-				'style' => 'display: none; padding: 0;',
-				'onchange' => 'plugin_switchIdent_switch(this.value);',
-			]);
-			$select->add($accNames, $accValues);
-			$rc->output->add_footer($select->show([$accSelected]));
+		if (count($accValues) <= 1) {
+			return;
 		}
+
+		$this->include_script('ident_switch-switch.js');
+
+		// Pass config to JS environment
+		$rc->output->set_env('ident_switch_iid_map', $iidMap);
+
+		$select = new html_select([
+			'id' => 'plugin-ident_switch-account',
+			'style' => 'display: none; padding: 0;',
+			'onchange' => 'plugin_switchIdent_switch(this.value);',
+		]);
+		$select->add($accNames, $accValues);
+
+		$html = '<span id="ident-switch-wrapper" class="ident-switch-wrapper">'
+			. $select->show([$accSelected])
+			. '<span id="ident-switch-badge" class="ident-switch-badge" style="display:none"></span>'
+			. '</span>';
+
+		$rc->output->add_footer($html);
+
+		if (!$rc->config->get('ident_switch.check_mail', true)) {
+			return;
+		}
+
+		// Run initial check and pass counts via env
+		$this->checker->check_new_mail([]);
+		$counts = $_SESSION['ident_switch_counts'] ?? [];
+		$initialCounts = [];
+		foreach ($counts as $cIid => $info) {
+			$initialCounts[$cIid] = [
+				'unseen' => $info['unseen'],
+				'baseline' => $info['baseline'] ?? $info['unseen'],
+			];
+		}
+		$rc->output->set_env('ident_switch_initial_counts', $initialCounts);
+	}
+
+	/**
+	 * Handle refresh hook: check new mail on secondary identities.
+	 *
+	 * @param array $args Hook arguments (empty for refresh).
+	 * @return array Unmodified hook arguments.
+	 */
+	public function on_refresh(array $args): array
+	{
+		$rc = rcmail::get_instance();
+		if (!$rc->config->get('ident_switch.check_mail', true)) {
+			return $args;
+		}
+
+		return $this->checker->check_new_mail($args);
 	}
 
 	/**

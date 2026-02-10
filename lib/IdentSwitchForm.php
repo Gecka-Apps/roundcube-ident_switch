@@ -101,6 +101,48 @@ class IdentSwitchForm
 	}
 
 	/**
+	 * Build the notification form fields for identity settings.
+	 *
+	 * Shows the actual newmail_notifier default value in each tri-state select.
+	 * Selecting the default option stores NULL so changes to global defaults propagate.
+	 *
+	 * @param array $record Identity record data used for default values.
+	 * @return array Form field definitions for notification preferences.
+	 */
+	public function get_notification_fields(array &$record): array
+	{
+		$rc = rcmail::get_instance();
+		$prefix = 'ident_switch.form.notify.';
+
+		$defaultKeys = [
+			'basic' => 'newmail_notifier_basic',
+			'sound' => 'newmail_notifier_sound',
+			'desktop' => 'newmail_notifier_desktop',
+		];
+
+		$triState = function (string $name) use ($prefix, &$record, $rc, $defaultKeys): string {
+			$defaultVal = $rc->config->get($defaultKeys[$name] ?? '', false);
+			$defaultLabel = $defaultVal
+				? $this->plugin->gettext('form.notify.on')
+				: $this->plugin->gettext('form.notify.off');
+			$defaultLabel .= ' (' . strtolower($this->plugin->gettext('form.notify.default')) . ')';
+
+			$select = new html_select(['name' => "_{$prefix}{$name}"]);
+			$select->add($defaultLabel, '');
+			$select->add($this->plugin->gettext('form.notify.on'), '1');
+			$select->add($this->plugin->gettext('form.notify.off'), '0');
+			return $select->show($record[$prefix . $name] ?? '');
+		};
+
+		return [
+			$prefix . 'check' => ['type' => 'checkbox'],
+			$prefix . 'basic' => ['value' => $triState('basic')],
+			$prefix . 'sound' => ['value' => $triState('sound')],
+			$prefix . 'desktop' => ['value' => $triState('desktop')],
+		];
+	}
+
+	/**
 	 * Handle identity_form hook: add plugin-specific fields to the identity editor.
 	 *
 	 * Loads existing account data from the database (if editing) or applies
@@ -150,7 +192,11 @@ class IdentSwitchForm
 				'sieve_host' => 'sieve.host',
 				'sieve_port' => 'sieve.port',
 				'sieve_auth' => 'sieve.auth',
-			];
+				'notify_check' => 'notify.check',
+				'notify_basic' => 'notify.basic',
+				'notify_sound' => 'notify.sound',
+				'notify_desktop' => 'notify.desktop',
+				];
 			foreach ($row as $k => $v) {
 				if (isset($dbToForm[$k])) {
 					$record['ident_switch.form.' . $dbToForm[$k]] = $v;
@@ -189,6 +235,22 @@ class IdentSwitchForm
 			'name' => $this->plugin->gettext('form.sieve.caption'),
 			'content' => $this->get_sieve_fields($record),
 		];
+		if (!$rc->config->get('ident_switch.check_mail', true)) {
+			// Admin disabled background mail checking
+		} elseif ($rc->plugins->get_plugin('newmail_notifier')) {
+			$args['form']['ident_switch.notify'] = [
+				'name' => $this->plugin->gettext('form.notify.caption'),
+				'content' => $this->get_notification_fields($record),
+			];
+		} elseif (!$rc->config->get('ident_switch.hide_notifier_warning', false)) {
+			$args['form']['ident_switch.notify'] = [
+				'name' => $this->plugin->gettext('form.notify.caption'),
+				'content' => html::div(
+					['class' => 'boxinformation'],
+					rcube::Q($this->plugin->gettext('form.notify.requires_newmail_notifier'))
+				),
+			];
+		}
 
 		return $args;
 	}
@@ -449,6 +511,18 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
+		// Notification settings
+		$retVal['notify.check'] = self::get_field_value('notify', 'check', false) ? 1 : 0;
+
+		$notifyBasic = self::get_field_value('notify', 'basic');
+		$retVal['notify.basic'] = ($notifyBasic !== null && $notifyBasic !== '') ? (int)$notifyBasic : null;
+
+		$notifySound = self::get_field_value('notify', 'sound');
+		$retVal['notify.sound'] = ($notifySound !== null && $notifySound !== '') ? (int)$notifySound : null;
+
+		$notifyDesktop = self::get_field_value('notify', 'desktop');
+		$retVal['notify.desktop'] = ($notifyDesktop !== null && $notifyDesktop !== '') ? (int)$notifyDesktop : null;
+
 		// Get also password
 		$retVal['imap.pass'] = self::get_field_value('imap', 'password', false, true);
 
@@ -505,13 +579,19 @@ class IdentSwitchForm
 			// Record already exists, will update it
 			$sql = 'UPDATE ' .
 				$rc->db->table_name(ident_switch::TABLE) .
-				' SET flags = ?, label = ?, imap_host = ?, imap_port = ?, imap_delimiter = ?, username = ?, password = ?, smtp_host = ?, smtp_port = ?, smtp_auth = ?, sieve_host = ?, sieve_port = ?, sieve_auth = ?, user_id = ?, iid = ?' .
+				' SET flags = ?, label = ?, imap_host = ?, imap_port = ?, imap_delimiter = ?, username = ?, password = ?,' .
+				' smtp_host = ?, smtp_port = ?, smtp_auth = ?, sieve_host = ?, sieve_port = ?, sieve_auth = ?,' .
+				' notify_check = ?, notify_basic = ?, notify_sound = ?, notify_desktop = ?,' .
+				' user_id = ?, iid = ?' .
 				' WHERE id = ?';
 		} elseif ($data['flags'] & ident_switch::DB_ENABLED) {
 			// No record exists, create new one
 			$sql = 'INSERT INTO ' .
 				$rc->db->table_name(ident_switch::TABLE) .
-				'(flags, label, imap_host, imap_port, imap_delimiter, username, password, smtp_host, smtp_port, smtp_auth, sieve_host, sieve_port, sieve_auth, user_id, iid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+				'(flags, label, imap_host, imap_port, imap_delimiter, username, password,' .
+				' smtp_host, smtp_port, smtp_auth, sieve_host, sieve_port, sieve_auth,' .
+				' notify_check, notify_basic, notify_sound, notify_desktop,' .
+				' user_id, iid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 		} else {
 			return false;
 		}
@@ -536,6 +616,10 @@ class IdentSwitchForm
 			$data['sieve.host'],
 			$data['sieve.port'],
 			$data['sieve.auth'],
+			$data['notify.check'] ?? 1,
+			$data['notify.basic'] ?? null,
+			$data['notify.sound'] ?? null,
+			$data['notify.desktop'] ?? null,
 			$rc->user->ID,
 			$data['id'],
 			$r['id'] ?? null

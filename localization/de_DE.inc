@@ -83,6 +83,34 @@ $labels['form.sieve.auth.imap'] = 'Wie IMAP';
 $labels['form.sieve.auth.none'] = 'Keine';
 
 
+// Notifications
+$labels['form.notify.caption'] = 'Benachrichtigungen';
+
+// Check for new mail
+$labels['form.notify.check'] = 'Auf neue Nachrichten prüfen';
+
+// Focus / favicon
+$labels['form.notify.basic'] = 'Fokus / Favicon';
+
+// Sound
+$labels['form.notify.sound'] = 'Ton';
+
+// Desktop notification
+$labels['form.notify.desktop'] = 'Desktop-Benachrichtigung';
+
+// Use default
+$labels['form.notify.default'] = 'Standard';
+
+// On
+$labels['form.notify.on'] = 'Ein';
+
+// Off
+$labels['form.notify.off'] = 'Aus';
+
+// Requires newmail_notifier plugin
+$labels['form.notify.requires_newmail_notifier'] = 'Benachrichtigungen erfordern das Plugin newmail_notifier. Bitte aktivieren Sie es oder kontaktieren Sie Ihren Administrator.';
+
+
 // Errors
 
 // Value in \'Server host name\' field is too long (64 chars max).
