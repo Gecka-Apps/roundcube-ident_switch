@@ -12,8 +12,11 @@ $labels['form.preconfig_only_warning'] = 'Die Konfiguration als separates Konto 
 // General
 $labels['form.common.general'] = 'Allgemein';
 
-// Enabled
-$labels['form.common.enabled'] = 'Aktiviert';
+// Account mode
+$labels['form.common.mode'] = 'Kontomodus';
+$labels['form.common.mode.primary'] = 'Hauptkonto';
+$labels['form.common.mode.separate'] = 'Separates Konto';
+$labels['form.common.mode.hint'] = 'Verknüpfen Sie diese Identität mit einem bestehenden Konto oder konfigurieren Sie sie als separates Konto mit eigenem Mailserver.';
 
 // Label
 $labels['form.common.label'] = 'Bezeichnung';

@@ -12,8 +12,11 @@ $labels['form.preconfig_only_warning'] = 'Separate account configuration is not 
 // General
 $labels['form.common.general'] = 'General';
 
-// Enabled
-$labels['form.common.enabled'] = 'Enabled';
+// Account mode
+$labels['form.common.mode'] = 'Account mode';
+$labels['form.common.mode.primary'] = 'Primary account';
+$labels['form.common.mode.separate'] = 'Separate account';
+$labels['form.common.mode.hint'] = 'Link this identity to an existing account, or configure it as a separate account with its own mail server.';
 
 // Label
 $labels['form.common.label'] = 'Label';

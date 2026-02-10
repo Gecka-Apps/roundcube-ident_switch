@@ -16,6 +16,9 @@
  */
 class IdentSwitchForm
 {
+	/** @var string Sentinel value placed in password fields to indicate an existing password. */
+	private const PASSWORD_SENTINEL = '__IDENT_SWITCH_UNCHANGED__';
+
 	private ident_switch $plugin;
 
 	public function __construct(ident_switch $plugin)
@@ -27,9 +30,82 @@ class IdentSwitchForm
 	 * Build the common form fields for identity settings.
 	 *
 	 * @param array $record Identity record data used for placeholders.
-	 * @return array Form field definitions for enabled, label, and readonly.
+	 * @return array Form field definitions for mode select, label, and readonly.
 	 */
-	public function get_common_fields(array &$record): array
+	public function get_common_fields(array &$record, bool $domainAllowed = true, string $warningHtml = ''): array
+	{
+		$prefix = 'ident_switch.form.common.';
+		$rc = rcmail::get_instance();
+
+		// Build mode select: Primary / Alias of X / Separate account
+		$modeSelect = new html_select([
+			'name' => "_{$prefix}mode",
+			'onchange' => 'plugin_switchIdent_mode_onChange(this.value);',
+		]);
+		$modeSelect->add($this->plugin->gettext('form.common.mode.primary'), 'primary');
+
+		// Add available accounts as alias targets
+		$accounts = $this->get_available_accounts($rc, $record['identity_id'] ?? null);
+		foreach ($accounts as $acc) {
+			$label = $acc['label'] ?: $acc['email'];
+			$modeSelect->add($label, 'alias:' . $acc['id']);
+		}
+
+		// Only offer "Separate account" when domain is allowed
+		if ($domainAllowed) {
+			$modeSelect->add($this->plugin->gettext('form.common.mode.separate'), 'separate');
+		}
+
+		$currentMode = $record["{$prefix}mode"] ?? 'primary';
+		$modeHtml = $modeSelect->show($currentMode)
+			. html::span(
+				['class' => 'form-text'],
+				rcube::Q($this->plugin->gettext('form.common.mode.hint'))
+			)
+			. $warningHtml;
+
+		return [
+			$prefix . 'mode' => ['value' => $modeHtml],
+			$prefix . 'readonly' => ['type' => 'hidden'],
+		];
+	}
+
+	/**
+	 * Get all separate accounts available as alias targets.
+	 *
+	 * @param rcmail   $rc         Roundcube instance.
+	 * @param int|null $excludeIid Identity ID to exclude (the identity being edited).
+	 * @return array List of account records with id, label, username, email.
+	 */
+	private function get_available_accounts(rcmail $rc, ?int $excludeIid): array
+	{
+		$sql = 'SELECT isw.id, isw.label, isw.username, ii.email'
+			. ' FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' isw'
+			. ' INNER JOIN ' . $rc->db->table_name('identities') . ' ii ON isw.iid = ii.identity_id'
+			. ' WHERE isw.user_id = ? AND isw.flags & ? > 0 AND isw.parent_id IS NULL';
+
+		$params = [$rc->user->ID, ident_switch::DB_ENABLED];
+
+		if ($excludeIid !== null) {
+			$sql .= ' AND isw.iid != ?';
+			$params[] = $excludeIid;
+		}
+
+		$q = $rc->db->query($sql, ...$params);
+		$accounts = [];
+		while ($r = $rc->db->fetch_assoc($q)) {
+			$accounts[] = $r;
+		}
+		return $accounts;
+	}
+
+	/**
+	 * Build the separate account header fields (label).
+	 *
+	 * @param array $record Identity record data.
+	 * @return array Form field definitions for label.
+	 */
+	public function get_separate_fields(array &$record): array
 	{
 		$prefix = 'ident_switch.form.common.';
 
@@ -46,9 +122,7 @@ class IdentSwitchForm
 			);
 
 		return [
-			$prefix . 'enabled' => ['type' => 'checkbox', 'onchange' => 'plugin_switchIdent_enabled_onChange();'],
 			$prefix . 'label' => ['value' => $labelHtml],
-			$prefix . 'readonly' => ['type' => 'hidden'],
 		];
 	}
 
@@ -66,7 +140,7 @@ class IdentSwitchForm
 			$prefix . 'security' => ['value' => $this->build_security_select($prefix, $record, 'ssl')],
 			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 993],
 			$prefix . 'username' => ['type' => 'text', 'size' => 64, 'placeholder' => $record['email'] ?? ''],
-			$prefix . 'password' => ['type' => 'password', 'size' => 64, 'autocomplete' => 'new-password'],
+			$prefix . 'password' => ['type' => 'password', 'size' => 64, 'autocomplete' => 'off'],
 			$prefix . 'delimiter' => ['value' => $this->build_delimiter_field($prefix, $record)],
 		];
 	}
@@ -96,7 +170,7 @@ class IdentSwitchForm
 			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 587],
 			$prefix . 'auth' => ['value' => $authType->show($authVal !== null ? [$authVal] : [])],
 			$prefix . 'username' => ['type' => 'text', 'size' => 64, 'autocomplete' => 'off'],
-			$prefix . 'password' => ['type' => 'password', 'size' => 64, 'autocomplete' => 'new-password'],
+			$prefix . 'password' => ['type' => 'password', 'size' => 64, 'autocomplete' => 'off'],
 		];
 	}
 
@@ -124,7 +198,7 @@ class IdentSwitchForm
 			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 4190],
 			$prefix . 'auth' => ['value' => $authType->show($authVal !== null ? [$authVal] : [])],
 			$prefix . 'username' => ['type' => 'text', 'size' => 64, 'autocomplete' => 'off'],
-			$prefix . 'password' => ['type' => 'password', 'size' => 64, 'autocomplete' => 'new-password'],
+			$prefix . 'password' => ['type' => 'password', 'size' => 64, 'autocomplete' => 'off'],
 		];
 	}
 
@@ -379,8 +453,13 @@ class IdentSwitchForm
 			}
 		}
 
-		// Checkboxes: absent from POST means unchecked
-		$record['ident_switch.form.common.enabled'] = !empty(self::get_field_value('common', 'enabled', false));
+		// Mode select
+		$modeVal = self::get_field_value('common', 'mode', false);
+		if ($modeVal !== null) {
+			$record['ident_switch.form.common.mode'] = $modeVal;
+		}
+
+		// Checkbox: absent from POST means unchecked
 		$record['ident_switch.form.notify.check'] = !empty(self::get_field_value('notify', 'check', false));
 	}
 
@@ -503,41 +582,26 @@ class IdentSwitchForm
 
 		$this->plugin->add_texts('localization');
 
-		// Build info section with description and domain warning
 		$preconfigOnly = $rc->config->get('ident_switch.preconfig_only', false);
 		$domainAllowed = empty($args['record']['email']) || $this->is_domain_allowed($args['record']['email']);
 
-		$warningVisible = $preconfigOnly && !$domainAllowed;
-
-		// Extract domain from email for warning message
-		$email = $args['record']['email'] ?? '';
-		$domain = '';
-		if (!empty($email) && str_contains($email, '@')) {
-			$domain = substr($email, strpos($email, '@') + 1);
+		// Build domain warning HTML (included in mode field)
+		$warningHtml = '';
+		if ($preconfigOnly) {
+			$email = $args['record']['email'] ?? '';
+			$domain = '';
+			if (!empty($email) && str_contains($email, '@')) {
+				$domain = substr($email, strpos($email, '@') + 1);
+			}
+			$warningHtml = html::div(
+				['class' => 'boxwarning', 'id' => 'ident-switch-domain-warning',
+				 'style' => $domainAllowed ? 'display:none' : ''],
+				rcube::Q(sprintf($this->plugin->gettext('form.preconfig_only_warning'), $domain))
+			);
 		}
-
-		$infoContent = html::div(
-			['class' => 'boxinformation', 'id' => 'ident-switch-info'],
-			rcube::Q($this->plugin->gettext('form.description'))
-		);
-		$warningContent = html::div(
-			['class' => 'boxwarning', 'id' => 'ident-switch-domain-warning',
-			 'style' => $warningVisible ? '' : 'display:none'],
-			rcube::Q(sprintf($this->plugin->gettext('form.preconfig_only_warning'), $domain))
-		);
-
-		$args['form']['ident_switch'] = [
-			'name' => $this->plugin->gettext('form.caption'),
-			'content' => $infoContent . $warningContent,
-		];
 
 		// Pass preconfig data to JS for dynamic form updates
 		$this->pass_preconfig_to_js($rc);
-
-		// When preconfig_only is enabled, hide field sections for non-preconfigured domains
-		if (!$domainAllowed) {
-			return $args;
-		}
 
 		$row = null;
 		if (isset($args['record']['identity_id'])) {
@@ -581,8 +645,22 @@ class IdentSwitchForm
 				}
 			}
 
-			// Parse flags
-			$record['ident_switch.form.common.enabled'] = (bool)($row['flags'] & ident_switch::DB_ENABLED);
+			// Replace encrypted passwords with sentinel (shows dots in form, detectable on save)
+			foreach (['imap.password', 'smtp.password', 'sieve.password'] as $passKey) {
+				$fullKey = 'ident_switch.form.' . $passKey;
+				if (!empty($record[$fullKey])) {
+					$record[$fullKey] = self::PASSWORD_SENTINEL;
+				}
+			}
+
+			// Determine mode: alias (has parent_id) or separate account
+			if ($row['parent_id'] !== null) {
+				$record['ident_switch.form.common.mode'] = 'alias:' . $row['parent_id'];
+			} elseif ($row['flags'] & ident_switch::DB_ENABLED) {
+				$record['ident_switch.form.common.mode'] = 'separate';
+			} else {
+				$record['ident_switch.form.common.mode'] = 'primary';
+			}
 
 			// Parse host schemes into separate security fields
 			foreach (['imap', 'smtp', 'sieve'] as $proto) {
@@ -621,7 +699,11 @@ class IdentSwitchForm
 
 		$args['form']['ident_switch.common'] = [
 			'name' => $this->plugin->gettext('form.common.general'),
-			'content' => $this->get_common_fields($record),
+			'content' => $this->get_common_fields($record, $domainAllowed, $warningHtml),
+		];
+		$args['form']['ident_switch.separate'] = [
+			'name' => $this->plugin->gettext('form.caption'),
+			'content' => $this->get_separate_fields($record),
 		];
 		$args['form']['ident_switch.imap'] = [
 			'name' => $this->plugin->gettext('form.imap.caption'),
@@ -670,32 +752,46 @@ class IdentSwitchForm
 			return $args;
 		}
 
-		// Block save for non-preconfigured domains when preconfig_only is enabled
-		if (!$this->is_domain_allowed($args['record']['email'])) {
+		$mode = self::get_field_value('common', 'mode', false) ?? 'primary';
+
+		// Block separate mode for non-preconfigured domains (alias and primary are always allowed)
+		if (!$this->is_domain_allowed($args['record']['email']) && $mode === 'separate') {
 			$this->disable($args['id']);
 			return $args;
 		}
 
-		if (!self::get_field_value('common', 'enabled', false)) {
+		if ($mode === 'primary') {
 			$this->disable($args['id']);
 			return $args;
 		}
 
+		if (str_starts_with($mode, 'alias:')) {
+			$parentId = (int)substr($mode, 6);
+			$this->save_alias($args['id'], $parentId);
+			return $args;
+		}
+
+		// mode === 'separate': full validation + save
 		$data = $this->validate();
 		if (!empty($data['err'])) {
 			$this->plugin->add_texts('localization');
 			$args['abort'] = true;
+			$args['result'] = false;
 			$args['message'] = 'ident_switch.err.' . $data['err'];
 			return $args;
 		}
 
 		$this->apply_readonly_preconfig($data, $args['record']['email']);
 
+		// Resolve sentinel passwords to actual passwords for connection testing
+		$testPass = $this->resolve_password_for_test($rc, $args['id'], $data['imap.pass']);
+
 		// Test connections before saving
-		$connErr = $this->test_connections($data, $args['record']['email'], $data['imap.pass']);
+		$connErr = $this->test_connections($data, $args['record']['email'], $testPass);
 		if ($connErr) {
 			$this->plugin->add_texts('localization');
 			$args['abort'] = true;
+			$args['result'] = false;
 			$args['message'] = 'ident_switch.err.' . $connErr;
 			return $args;
 		}
@@ -723,30 +819,48 @@ class IdentSwitchForm
 			return $args;
 		}
 
-		// Block creation for non-preconfigured domains when preconfig_only is enabled
-		if (!$this->is_domain_allowed($args['record']['email'])) {
+		$mode = self::get_field_value('common', 'mode', false) ?? 'primary';
+
+		// Block separate mode for non-preconfigured domains (alias and primary are always allowed)
+		if (!$this->is_domain_allowed($args['record']['email']) && $mode === 'separate') {
 			return $args;
 		}
 
-		if (!self::get_field_value('common', 'enabled', false)) {
+		if ($mode === 'primary') {
 			return $args;
 		}
 
+		if (str_starts_with($mode, 'alias:')) {
+			$parentId = (int)substr($mode, 6);
+			$_SESSION['createData' . ident_switch::MY_POSTFIX] = [
+				'mode' => 'alias',
+				'parent_id' => $parentId,
+				'label' => self::get_field_value('common', 'label'),
+			];
+			return $args;
+		}
+
+		// mode === 'separate': full validation
 		$data = $this->validate();
 		if (!empty($data['err'])) {
 			$this->plugin->add_texts('localization');
 			$args['abort'] = true;
+			$args['result'] = false;
 			$args['message'] = 'ident_switch.err.' . $data['err'];
 			return $args;
 		}
 
 		$this->apply_readonly_preconfig($data, $args['record']['email']);
 
+		// For new identities, sentinel should not appear, but handle defensively
+		$testPass = ($data['imap.pass'] === self::PASSWORD_SENTINEL) ? '' : $data['imap.pass'];
+
 		// Test connections before saving
-		$connErr = $this->test_connections($data, $args['record']['email'], $data['imap.pass']);
+		$connErr = $this->test_connections($data, $args['record']['email'], $testPass);
 		if ($connErr) {
 			$this->plugin->add_texts('localization');
 			$args['abort'] = true;
+			$args['result'] = false;
 			$args['message'] = 'ident_switch.err.' . $connErr;
 			return $args;
 		}
@@ -779,6 +893,8 @@ class IdentSwitchForm
 		unset($_SESSION['createData' . ident_switch::MY_POSTFIX]);
 		if (!$data || count($data) === 0) {
 			ident_switch::write_log("Object with ident_switch values not found in session for ID = {$args['id']}.");
+		} elseif (($data['mode'] ?? '') === 'alias') {
+			$this->save_alias($args['id'], $data['parent_id']);
 		} else {
 			$data['id'] = $args['id'];
 			$this->save($rc, $data);
@@ -829,15 +945,12 @@ class IdentSwitchForm
 		$record = ['email' => $email];
 		$preconfig->apply($record);
 
-		// Map preconfig record keys to validated data keys
+		// Map simple preconfig record keys to validated data keys
 		$map = [
-			'ident_switch.form.imap.host' => 'imap.host',
 			'ident_switch.form.imap.port' => 'imap.port',
 			'ident_switch.form.imap.delimiter' => 'imap.delimiter',
 			'ident_switch.form.imap.username' => 'imap.user',
-			'ident_switch.form.smtp.host' => 'smtp.host',
 			'ident_switch.form.smtp.port' => 'smtp.port',
-			'ident_switch.form.sieve.host' => 'sieve.host',
 			'ident_switch.form.sieve.port' => 'sieve.port',
 		];
 
@@ -846,6 +959,44 @@ class IdentSwitchForm
 				$data[$dataKey] = $record[$recordKey];
 			}
 		}
+
+		// Compose hosts with security scheme (preconfig stores them separately)
+		foreach (['imap', 'smtp', 'sieve'] as $proto) {
+			$hostKey = "ident_switch.form.{$proto}.host";
+			$secKey = "ident_switch.form.{$proto}.security";
+			if (empty($data["{$proto}.host"]) && !empty($record[$hostKey])) {
+				$security = $record[$secKey] ?? '';
+				$data["{$proto}.host"] = self::compose_host_scheme($record[$hostKey], $security);
+			}
+		}
+	}
+
+	/**
+	 * Resolve IMAP password for connection testing.
+	 *
+	 * If the password is the sentinel (unchanged), decrypt from DB.
+	 * Otherwise return the raw password as-is.
+	 *
+	 * @param rcmail $rc  Roundcube instance.
+	 * @param int    $iid Identity ID.
+	 * @param string|null $pass Raw password from POST.
+	 * @return string Decrypted or raw password for testing.
+	 */
+	private function resolve_password_for_test(rcmail $rc, int $iid, ?string $pass): string
+	{
+		if ($pass !== self::PASSWORD_SENTINEL) {
+			return $pass ?? '';
+		}
+
+		$sql = 'SELECT password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
+		$q = $rc->db->query($sql, $iid, $rc->user->ID);
+		$r = $rc->db->fetch_assoc($q);
+		if (!$r || empty($r['password'])) {
+			return '';
+		}
+
+		$decrypted = $rc->decrypt($r['password']);
+		return ($decrypted !== false) ? $decrypted : '';
 	}
 
 	/**
@@ -922,8 +1073,8 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
-		$retVal['smtp.auth'] = self::get_field_value('smtp', 'auth');
-		if (!ctype_digit($retVal['smtp.auth'] ?? '')) {
+		$retVal['smtp.auth'] = self::get_field_value('smtp', 'auth') ?? (string)ident_switch::SMTP_AUTH_IMAP;
+		if (!ctype_digit($retVal['smtp.auth'])) {
 			$retVal['err'] = 'auth.num';
 			return $retVal;
 		}
@@ -960,8 +1111,8 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
-		$retVal['sieve.auth'] = self::get_field_value('sieve', 'auth');
-		if (!ctype_digit($retVal['sieve.auth'] ?? '')) {
+		$retVal['sieve.auth'] = self::get_field_value('sieve', 'auth') ?? (string)ident_switch::SIEVE_AUTH_IMAP;
+		if (!ctype_digit($retVal['sieve.auth'])) {
 			$retVal['err'] = 'auth.num';
 			return $retVal;
 		}
@@ -1042,7 +1193,7 @@ class IdentSwitchForm
 			// Record already exists, will update it
 			$sql = 'UPDATE ' .
 				$rc->db->table_name(ident_switch::TABLE) .
-				' SET flags = ?, label = ?, imap_host = ?, imap_port = ?, imap_delimiter = ?, username = ?, password = ?,' .
+				' SET flags = ?, parent_id = ?, label = ?, imap_host = ?, imap_port = ?, imap_delimiter = ?, username = ?, password = ?,' .
 				' smtp_host = ?, smtp_port = ?, smtp_auth = ?, smtp_username = ?, smtp_password = ?,' .
 				' sieve_host = ?, sieve_port = ?, sieve_auth = ?, sieve_username = ?, sieve_password = ?,' .
 				' notify_check = ?, notify_basic = ?, notify_sound = ?, notify_desktop = ?,' .
@@ -1052,34 +1203,31 @@ class IdentSwitchForm
 			// No record exists, create new one
 			$sql = 'INSERT INTO ' .
 				$rc->db->table_name(ident_switch::TABLE) .
-				'(flags, label, imap_host, imap_port, imap_delimiter, username, password,' .
+				'(flags, parent_id, label, imap_host, imap_port, imap_delimiter, username, password,' .
 				' smtp_host, smtp_port, smtp_auth, smtp_username, smtp_password,' .
 				' sieve_host, sieve_port, sieve_auth, sieve_username, sieve_password,' .
 				' notify_check, notify_basic, notify_sound, notify_desktop,' .
-				' user_id, iid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+				' user_id, iid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 		} else {
 			return false;
 		}
 
-		// Encrypt IMAP password (compare raw POST value with decrypted DB value)
-		$existingImapPass = !empty($r['password']) ? $rc->decrypt($r['password']) : null;
-		if ($data['imap.pass'] === $existingImapPass && $existingImapPass !== false) {
-			$data['imap.pass'] = $r['password'];
+		// Handle IMAP password: sentinel means unchanged, empty means clear, else encrypt
+		if ($data['imap.pass'] === self::PASSWORD_SENTINEL) {
+			$data['imap.pass'] = $r['password'] ?? null;
 		} else {
-			$data['imap.pass'] = $rc->encrypt($data['imap.pass']);
+			$data['imap.pass'] = $data['imap.pass'] ? $rc->encrypt($data['imap.pass']) : null;
 		}
 
-		// Encrypt SMTP password
-		$existingSmtpPass = !empty($r['smtp_password']) ? $rc->decrypt($r['smtp_password']) : null;
-		if ($data['smtp.pass'] === $existingSmtpPass && $existingSmtpPass !== false) {
+		// Handle SMTP password
+		if ($data['smtp.pass'] === self::PASSWORD_SENTINEL) {
 			$data['smtp.pass'] = $r['smtp_password'] ?? null;
 		} else {
 			$data['smtp.pass'] = $data['smtp.pass'] ? $rc->encrypt($data['smtp.pass']) : null;
 		}
 
-		// Encrypt Sieve password
-		$existingSievePass = !empty($r['sieve_password']) ? $rc->decrypt($r['sieve_password']) : null;
-		if ($data['sieve.pass'] === $existingSievePass && $existingSievePass !== false) {
+		// Handle Sieve password
+		if ($data['sieve.pass'] === self::PASSWORD_SENTINEL) {
 			$data['sieve.pass'] = $r['sieve_password'] ?? null;
 		} else {
 			$data['sieve.pass'] = $data['sieve.pass'] ? $rc->encrypt($data['sieve.pass']) : null;
@@ -1088,6 +1236,7 @@ class IdentSwitchForm
 		$rc->db->query(
 			$sql,
 			$data['flags'],
+			null, // parent_id: NULL for separate accounts
 			$data['label'],
 			$data['imap.host'],
 			$data['imap.port'],
@@ -1114,6 +1263,54 @@ class IdentSwitchForm
 		);
 
 		return true;
+	}
+
+	/**
+	 * Save an alias link between an identity and a parent account.
+	 *
+	 * Creates or updates an ident_switch record with parent_id set and
+	 * all server fields cleared (alias uses parent's config).
+	 *
+	 * @param int $iid      Identity ID of the alias.
+	 * @param int $parentId ident_switch.id of the parent account.
+	 */
+	private function save_alias(int $iid, int $parentId): void
+	{
+		$rc = rcmail::get_instance();
+
+		// Validate that parent_id exists and belongs to this user
+		$sql = 'SELECT id FROM ' . $rc->db->table_name(ident_switch::TABLE)
+			. ' WHERE id = ? AND user_id = ? AND parent_id IS NULL';
+		$q = $rc->db->query($sql, $parentId, $rc->user->ID);
+		if (!$rc->db->fetch_assoc($q)) {
+			ident_switch::write_log("Alias save: parent account with id={$parentId} not found for user.");
+			return;
+		}
+
+		$label = self::get_field_value('common', 'label');
+
+		// Check if record already exists
+		$sql = 'SELECT id FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
+		$q = $rc->db->query($sql, $iid, $rc->user->ID);
+		$r = $rc->db->fetch_assoc($q);
+
+		if ($r) {
+			$sql = 'UPDATE ' . $rc->db->table_name(ident_switch::TABLE)
+				. ' SET flags = ?, parent_id = ?, label = ?,'
+				. ' imap_host = NULL, imap_port = NULL, imap_delimiter = NULL,'
+				. ' username = NULL, password = NULL,'
+				. ' smtp_host = NULL, smtp_port = NULL, smtp_auth = 1, smtp_username = NULL, smtp_password = NULL,'
+				. ' sieve_host = NULL, sieve_port = NULL, sieve_auth = 1, sieve_username = NULL, sieve_password = NULL,'
+				. ' notify_check = 0, notify_basic = NULL, notify_sound = NULL, notify_desktop = NULL'
+				. ' WHERE id = ?';
+			$rc->db->query($sql, ident_switch::DB_ENABLED, $parentId, $label, $r['id']);
+		} else {
+			$sql = 'INSERT INTO ' . $rc->db->table_name(ident_switch::TABLE)
+				. ' (flags, parent_id, label, user_id, iid) VALUES (?, ?, ?, ?, ?)';
+			$rc->db->query($sql, ident_switch::DB_ENABLED, $parentId, $label, $rc->user->ID, $iid);
+		}
+
+		ident_switch::write_log("Saved alias link: identity {$iid} → parent account {$parentId}.");
 	}
 
 	/**

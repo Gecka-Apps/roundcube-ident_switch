@@ -12,8 +12,11 @@ $labels['form.preconfig_only_warning'] = 'Настройка отдельног�
 // General
 $labels['form.common.general'] = 'Общие';
 
-// Enabled
-$labels['form.common.enabled'] = 'Включено';
+// Account mode
+$labels['form.common.mode'] = 'Режим аккаунта';
+$labels['form.common.mode.primary'] = 'Основной аккаунт';
+$labels['form.common.mode.separate'] = 'Отдельный аккаунт';
+$labels['form.common.mode.hint'] = 'Привяжите эту учётную запись к существующему аккаунту или настройте её как отдельный аккаунт с собственным почтовым сервером.';
 
 // Label
 $labels['form.common.label'] = 'Название';

@@ -12,8 +12,11 @@ $labels['form.preconfig_only_warning'] = 'Konfiguracija ločenega računa za dom
 // General
 $labels['form.common.general'] = 'Splošno';
 
-// Enabled
-$labels['form.common.enabled'] = 'Omogočeno';
+// Account mode
+$labels['form.common.mode'] = 'Način računa';
+$labels['form.common.mode.primary'] = 'Glavni račun';
+$labels['form.common.mode.separate'] = 'Ločen račun';
+$labels['form.common.mode.hint'] = 'Povežite to identiteto z obstoječim računom ali jo konfigurirajte kot ločen račun z lastnim poštnim strežnikom.';
 
 // Label
 $labels['form.common.label'] = 'Oznaka';

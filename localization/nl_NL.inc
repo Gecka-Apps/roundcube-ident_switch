@@ -12,8 +12,11 @@ $labels['form.preconfig_only_warning'] = 'Configuratie als afzonderlijk account 
 // General
 $labels['form.common.general'] = 'Algemeen';
 
-// Enabled
-$labels['form.common.enabled'] = 'Inschakelen';
+// Account mode
+$labels['form.common.mode'] = 'Accountmodus';
+$labels['form.common.mode.primary'] = 'Hoofdaccount';
+$labels['form.common.mode.separate'] = 'Afzonderlijk account';
+$labels['form.common.mode.hint'] = 'Koppel deze identiteit aan een bestaand account of configureer het als een afzonderlijk account met een eigen mailserver.';
 
 // Label
 $labels['form.common.label'] = 'Label';

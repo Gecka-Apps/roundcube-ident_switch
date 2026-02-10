@@ -20,7 +20,9 @@ var ident_switch_portDefaults = {
 };
 
 $(function() {
-	$("INPUT[name='_ident_switch.form.common.enabled']").change();
+	// Apply initial mode visibility
+	var initialMode = $("SELECT[name='_ident_switch.form.common.mode']").val() || 'primary';
+	plugin_switchIdent_mode_onChange(initialMode);
 	plugin_switchIdent_processPreconfig();
 
 	// Bind security change handlers
@@ -86,6 +88,42 @@ $(function() {
 		$("INPUT[name='_ident_switch.form.sieve.host']").attr('placeholder', initialImapHost);
 	}
 });
+
+/**
+ * Handle mode select change: show/hide form sections based on selected mode.
+ * @param {string} mode - 'primary', 'alias:N', or 'separate'.
+ */
+function plugin_switchIdent_mode_onChange(mode) {
+	// Find the fieldsets/legends for each section
+	var $modeFld = $("SELECT[name='_ident_switch.form.common.mode']");
+	var $allFieldsets = $modeFld.closest('form').find('fieldset');
+	var $readonlyRow = $("INPUT[name='_ident_switch.form.common.readonly']").parentsUntil('FIELDSET', 'TR, .row');
+
+	// Separate account fieldsets (label, IMAP, SMTP, Sieve, Notify)
+	var separateFieldsets = [];
+	$allFieldsets.each(function() {
+		var $fs = $(this);
+		if ($fs.find("INPUT[name='_ident_switch.form.common.label']").length ||
+			$fs.find("INPUT[name='_ident_switch.form.imap.host']").length ||
+			$fs.find("INPUT[name='_ident_switch.form.smtp.host']").length ||
+			$fs.find("INPUT[name='_ident_switch.form.sieve.host']").length ||
+			$fs.find("INPUT[name='_ident_switch.form.notify.check']").length) {
+			separateFieldsets.push($fs);
+		}
+	});
+
+	if (mode === 'separate') {
+		// Show all separate account fieldsets
+		$.each(separateFieldsets, function(_, $fs) { $fs.show(); });
+		plugin_switchIdent_processPreconfig();
+	} else {
+		// Hide all separate account fieldsets for primary and alias modes
+		$.each(separateFieldsets, function(_, $fs) { $fs.hide(); });
+	}
+
+	// Always hide readonly row
+	$readonlyRow.hide();
+}
 
 /**
  * Handle security dropdown change: update port placeholder and show/hide warning.
@@ -187,15 +225,6 @@ function plugin_switchIdent_processPreconfig() {
 	}
 }
 
-function plugin_switchIdent_enabled_onChange(e) {
-	var $enFld = $("INPUT[name='_ident_switch.form.common.enabled'], INPUT[name='_ident_switch.form.imap.host'], INPUT[name='_ident_switch.form.smtp.host']");
-	var $fieldset = $enFld.parents("FIELDSET");
-	var isEnabled = $enFld.is(":checked");
-	$("INPUT[name!='_ident_switch.form.common.enabled']", $fieldset).prop("disabled", !isEnabled);
-	$("SELECT", $fieldset).prop("disabled", !isEnabled);
-	plugin_switchIdent_processPreconfig();
-}
-
 /**
  * Handle email field change: apply preconfig and manage domain restriction.
  * @param {string} email - The email address entered by the user.
@@ -217,17 +246,22 @@ function plugin_switchIdent_onEmailChange(email) {
 	// Update username placeholder to match current email
 	$("INPUT[name='_ident_switch.form.imap.username']").attr('placeholder', email);
 
-	// Show/hide domain warning
+	// Show/hide domain warning and restrict "separate" option
+	var $modeSelect = $("SELECT[name='_ident_switch.form.common.mode']");
 	if (preconfigOnly && !cfg) {
 		var tpl = rcmail.env.ident_switch_warning_tpl || '';
 		$('#ident-switch-domain-warning').text(tpl.replace('%s', domain)).show();
-		$("INPUT[name='_ident_switch.form.common.enabled']").prop('checked', false).prop('disabled', true);
-		plugin_switchIdent_enabled_onChange();
+		// Disable "separate" option but keep alias options available
+		$modeSelect.find('option[value="separate"]').prop('disabled', true);
+		if ($modeSelect.val() === 'separate') {
+			$modeSelect.val('primary');
+			plugin_switchIdent_mode_onChange('primary');
+		}
 		return;
 	}
 
 	$('#ident-switch-domain-warning').hide();
-	$("INPUT[name='_ident_switch.form.common.enabled']").prop('disabled', false);
+	$modeSelect.find('option[value="separate"]').prop('disabled', false);
 
 	// Only auto-fill for identities without an existing DB record
 	if (!rcmail.env.ident_switch_has_record && cfg) {
@@ -241,6 +275,9 @@ function plugin_switchIdent_onEmailChange(email) {
  * @param {string} email - The full email address.
  */
 function plugin_switchIdent_applyJsPreconfig(cfg, email) {
+	// Pre-fill server fields silently without changing mode.
+	// The user must explicitly select "Separate account" to see them.
+
 	// Apply protocol settings
 	$.each(['imap', 'smtp', 'sieve'], function(_, proto) {
 		if (!cfg[proto]) return;
@@ -282,6 +319,6 @@ function plugin_switchIdent_applyJsPreconfig(cfg, email) {
 	}
 	$("INPUT[name='_ident_switch.form.common.readonly']").val(readonlyLevel);
 
-	// Re-apply enabled/disabled state (enables fields, then processPreconfig disables readonly ones)
-	plugin_switchIdent_enabled_onChange();
+	// Re-apply preconfig readonly state
+	plugin_switchIdent_processPreconfig();
 }
