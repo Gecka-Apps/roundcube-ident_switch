@@ -1,0 +1,25 @@
+name: PHP CodeSniffer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  phpcs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Install dependencies
+        run: composer config allow-plugins.roundcube/plugin-installer true && composer install --prefer-dist --no-progress
+
+      - name: Run PHP CodeSniffer
+        run: composer phpcs

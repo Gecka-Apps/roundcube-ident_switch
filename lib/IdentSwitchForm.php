@@ -713,10 +713,12 @@ class IdentSwitchForm
             'name' => $this->plugin->gettext('form.smtp.caption'),
             'content' => $this->get_smtp_fields($record),
         ];
-        $args['form']['ident_switch.sieve'] = [
-            'name' => $this->plugin->gettext('form.sieve.caption'),
-            'content' => $this->get_sieve_fields($record),
-        ];
+        if ($rc->plugins->get_plugin('managesieve')) {
+            $args['form']['ident_switch.sieve'] = [
+                'name' => $this->plugin->gettext('form.sieve.caption'),
+                'content' => $this->get_sieve_fields($record),
+            ];
+        }
         if (!$rc->config->get('ident_switch.check_mail', true)) {
             // Admin disabled background mail checking
         } elseif ($rc->plugins->get_plugin('newmail_notifier')) {
