@@ -343,23 +343,77 @@ class ident_switch extends rcube_plugin
 	}
 
 	/**
-	 * Handle template_object_composeheaders hook: fix identity selection in compose view.
+	 * Handle template_object_composeheaders hook: filter and fix identity selection.
 	 *
-	 * When impersonating, pre-selects the correct identity in the "From" dropdown.
+	 * Restricts the From dropdown to identities belonging to the active account
+	 * (the account itself + its aliases). When impersonating, also pre-selects
+	 * the correct identity.
 	 *
 	 * @param array $args Hook arguments containing form element 'id'.
 	 */
 	public function on_template_object_composeheaders(array $args): void
 	{
-		if ($args['id'] === '_from') {
-			$rc = rcmail::get_instance();
-			if (strcasecmp($_SESSION['username'], $rc->user->data['username']) !== 0) {
-				if (isset($_SESSION['iid' . self::MY_POSTFIX])) {
-					$iid = $_SESSION['iid' . self::MY_POSTFIX];
-					$rc->output->add_script("plugin_switchIdent_fixIdent({$iid});", 'docready');
-				} else {
-					self::write_log('Special session variable with active identity ID not found.');
+		if ($args['id'] !== '_from') {
+			return;
+		}
+
+		$rc = rcmail::get_instance();
+		$userId = $rc->user->ID;
+		$isImpersonating = strcasecmp($_SESSION['username'], $rc->user->data['username']) !== 0;
+
+		// Pre-select the active identity when impersonating
+		if ($isImpersonating) {
+			if (isset($_SESSION['iid' . self::MY_POSTFIX])) {
+				$iid = $_SESSION['iid' . self::MY_POSTFIX];
+				$rc->output->add_script("plugin_switchIdent_fixIdent({$iid});", 'docready');
+			} else {
+				self::write_log('Special session variable with active identity ID not found.');
+			}
+		}
+
+		// Compute allowed identity IDs for the From dropdown
+		$iidSession = $_SESSION['iid' . self::MY_POSTFIX] ?? null;
+
+		if ($isImpersonating && is_numeric($iidSession) && (int)$iidSession > 0) {
+			// Switched to a secondary account: allow its identity + aliases
+			$sql = 'SELECT id FROM ' . $rc->db->table_name(self::TABLE)
+				. ' WHERE iid = ? AND user_id = ? AND parent_id IS NULL';
+			$q = $rc->db->query($sql, (int)$iidSession, $userId);
+			$r = $rc->db->fetch_assoc($q);
+
+			if ($r) {
+				$accountId = (int)$r['id'];
+				$sql = 'SELECT iid FROM ' . $rc->db->table_name(self::TABLE)
+					. ' WHERE (id = ? OR parent_id = ?) AND user_id = ? AND flags & ? > 0';
+				$q = $rc->db->query($sql, $accountId, $accountId, $userId, self::DB_ENABLED);
+				$allowed = [];
+				while ($row = $rc->db->fetch_assoc($q)) {
+					$allowed[] = (int)$row['iid'];
 				}
+				$rc->output->set_env('ident_switch_allowed_identities', $allowed);
+			}
+		} else {
+			// Primary account: exclude identities belonging to enabled accounts/aliases
+			$sql = 'SELECT iid FROM ' . $rc->db->table_name(self::TABLE)
+				. ' WHERE user_id = ? AND flags & ? > 0';
+			$q = $rc->db->query($sql, $userId, self::DB_ENABLED);
+			$excluded = [];
+			while ($row = $rc->db->fetch_assoc($q)) {
+				$excluded[] = (int)$row['iid'];
+			}
+
+			if (!empty($excluded)) {
+				$sql = 'SELECT identity_id FROM ' . $rc->db->table_name('identities')
+					. ' WHERE user_id = ? AND del = 0';
+				$q = $rc->db->query($sql, $userId);
+				$allowed = [];
+				while ($row = $rc->db->fetch_assoc($q)) {
+					$iid = (int)$row['identity_id'];
+					if (!in_array($iid, $excluded)) {
+						$allowed[] = $iid;
+					}
+				}
+				$rc->output->set_env('ident_switch_allowed_identities', $allowed);
 			}
 		}
 	}

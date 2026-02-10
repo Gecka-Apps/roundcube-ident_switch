@@ -270,3 +270,37 @@ function plugin_switchIdent_fixIdent(iid) {
 		$('#_from').val(iid);
 	}
 }
+
+/**
+ * Filter compose From dropdown to only show identities for the active account.
+ * Removes options whose identity_id is not in ident_switch_allowed_identities.
+ */
+function plugin_switchIdent_filterFrom() {
+	var allowed = rcmail.env.ident_switch_allowed_identities;
+	if (!allowed || !allowed.length) {
+		return;
+	}
+
+	var $from = $('#_from');
+	if (!$from.length) {
+		return;
+	}
+
+	var currentVal = parseInt($from.val());
+
+	$from.find('option').each(function() {
+		if (allowed.indexOf(parseInt($(this).val())) === -1) {
+			$(this).remove();
+		}
+	});
+
+	// If selected option was removed, select the first remaining
+	if (allowed.indexOf(currentVal) === -1) {
+		$from.val($from.find('option:first').val()).trigger('change');
+	}
+}
+
+// Filter compose From dropdown on page load
+$(function() {
+	plugin_switchIdent_filterFrom();
+});
