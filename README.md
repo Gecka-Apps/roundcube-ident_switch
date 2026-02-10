@@ -71,7 +71,7 @@ Switch between multiple IMAP accounts within a single Roundcube session.
 Navigate to your Roundcube installation directory and run:
 
 ```bash
-composer require gecka/roundcube-ident_switch
+composer require gecka/ident-switch
 ```
 
 The [roundcube/plugin-installer](https://github.com/roundcube/plugin-installer) will automatically place the plugin in the correct `plugins/` directory, initialize the database schema, and offer to enable it.
@@ -80,7 +80,7 @@ The [roundcube/plugin-installer](https://github.com/roundcube/plugin-installer) 
 
 > **Running as root on a VPS?** Roundcube files are typically owned by `www-data`. Run Composer as the web server user to avoid permission issues:
 > ```bash
-> sudo -u www-data composer require gecka/roundcube-ident_switch
+> sudo -u www-data composer require gecka/ident-switch
 > ```
 
 ### Manual
@@ -153,7 +153,7 @@ $config['ident_switch.preconfig'] = [
 ## Updating
 
 ```bash
-composer update gecka/roundcube-ident_switch
+composer update gecka/ident-switch
 ```
 
 Database migrations are applied automatically by the Roundcube plugin installer.
@@ -166,7 +166,7 @@ If you are upgrading from `boressoft/ident_switch`, `toteph42/identity_switch`, 
 
 ### With Composer
 
-1. Replace the old package in `composer.json` with `gecka/roundcube-ident_switch` and run `composer update`
+1. Replace the old package in `composer.json` with `gecka/ident-switch` and run `composer update`
 2. Database migrations are applied automatically
 
 ### Manual

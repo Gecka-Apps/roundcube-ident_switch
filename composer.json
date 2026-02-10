@@ -1,5 +1,5 @@
 {
-    "name": "gecka/roundcube-ident_switch",
+    "name": "gecka/ident-switch",
     "type": "roundcube-plugin",
     "description": "This plugin allows users to switch between different accounts (including remote) in single Roundcube session.",
     "homepage": "https://github.com/Gecka-Apps/roundcube-ident_switch",
@@ -51,7 +51,6 @@
     },
     "extra": {
         "roundcube": {
-            "plugin-name": "ident_switch",
             "min-version": "1.6",
             "sql-dir": "SQL"
         }
