@@ -4,14 +4,20 @@
  */
 $labels = array();
 
-// Plugin ident_switch
-$labels['form.common.caption'] = 'Plugin ident_switch';
+// Separate Account
+$labels['form.caption'] = 'Separate Account';
+$labels['form.description'] = 'Configure this identity as a separate account with its own mail server connections.';
+$labels['form.preconfig_only_warning'] = 'Separate account configuration is not available for the domain %s.';
+
+// General
+$labels['form.common.general'] = 'General';
 
 // Enabled
 $labels['form.common.enabled'] = 'Enabled';
 
 // Label
 $labels['form.common.label'] = 'Label';
+$labels['form.common.label.hint'] = 'Name displayed in the account switcher. If empty, the email address is used.';
 
 // Value in \'Label\' field is too long (32 chars max).
 $labels['err.label.long'] = 'Value in \'Label\' field is too long (32 chars max).';
@@ -20,8 +26,8 @@ $labels['err.label.long'] = 'Value in \'Label\' field is too long (32 chars max)
 // IMAP
 $labels['form.imap.caption'] = 'IMAP';
 
-// Server host name
-$labels['form.imap.host'] = 'Server host name';
+// Incoming mail server
+$labels['form.imap.host'] = 'Incoming mail server';
 
 // Security
 $labels['form.imap.security'] = 'Security';
@@ -47,8 +53,8 @@ $labels['err.user.long'] = 'Value in \'Username\' field is too long (64 chars ma
 // SMTP
 $labels['form.smtp.caption'] = 'SMTP';
 
-// Server host name
-$labels['form.smtp.host'] = 'Server host name';
+// Outgoing mail server
+$labels['form.smtp.host'] = 'Outgoing mail server';
 
 // Security
 $labels['form.smtp.security'] = 'Security';
@@ -64,6 +70,15 @@ $labels['form.smtp.auth.imap'] = 'As IMAP';
 
 // None
 $labels['form.smtp.auth.none'] = 'None';
+
+// Custom
+$labels['form.smtp.auth.custom'] = 'Custom';
+
+// Username
+$labels['form.smtp.username'] = 'Username';
+
+// Password
+$labels['form.smtp.password'] = 'Password';
 
 
 // Sieve
@@ -86,6 +101,15 @@ $labels['form.sieve.auth.imap'] = 'As IMAP';
 
 // None
 $labels['form.sieve.auth.none'] = 'None';
+
+// Custom
+$labels['form.sieve.auth.custom'] = 'Custom';
+
+// Username
+$labels['form.sieve.username'] = 'Username';
+
+// Password
+$labels['form.sieve.password'] = 'Password';
 
 
 // Notifications
@@ -134,3 +158,12 @@ $labels['err.port.num'] = 'Value in \'Port\' field must be a number.';
 
 // Value in \'Port\' field must be between 1 and 65535.
 $labels['err.port.range'] = 'Value in \'Port\' field must be between 1 and 65535.';
+
+// IMAP connection test failed.
+$labels['err.imap.connect'] = 'IMAP connection failed. Please check the server address, port, and credentials.';
+
+// SMTP connection test failed.
+$labels['err.smtp.connect'] = 'SMTP connection failed. Please check the server address, port, and credentials.';
+
+// Sieve connection test failed.
+$labels['err.sieve.connect'] = 'Sieve connection failed. Please check the server address, port, and credentials.';

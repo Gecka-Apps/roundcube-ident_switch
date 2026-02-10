@@ -4,14 +4,20 @@
  */
 $labels = array();
 
-// Plugin ident_switch
-$labels['form.common.caption'] = 'Razširitev ident_switch';
+// Separate Account
+$labels['form.caption'] = 'Ločen račun';
+$labels['form.description'] = 'Konfigurirajte to identiteto kot ločen račun z lastnimi povezavami do poštnega strežnika.';
+$labels['form.preconfig_only_warning'] = 'Konfiguracija ločenega računa za domeno %s ni na voljo.';
+
+// General
+$labels['form.common.general'] = 'Splošno';
 
 // Enabled
 $labels['form.common.enabled'] = 'Omogočeno';
 
 // Label
 $labels['form.common.label'] = 'Oznaka';
+$labels['form.common.label.hint'] = 'Ime, prikazano v izbirniku računov. Če je prazno, se uporabi e-poštni naslov.';
 
 // Value in \'Label\' field is too long (32 chars max).
 $labels['err.label.long'] = 'Število znakov v polju \'Oznaka\' presega maksimalno število znakov (max 32 znakov).';
@@ -20,8 +26,8 @@ $labels['err.label.long'] = 'Število znakov v polju \'Oznaka\' presega maksimal
 // IMAP
 $labels['form.imap.caption'] = 'IMAP';
 
-// Server host name
-$labels['form.imap.host'] = 'Ime oz. naslov IMAP strežnika';
+// Incoming mail server
+$labels['form.imap.host'] = 'Strežnik dohodne pošte';
 
 // Security
 $labels['form.imap.security'] = 'Varnost';
@@ -47,8 +53,8 @@ $labels['err.user.long'] = 'Število znakov v polju \'Uporabniško ime\' presega
 // SMTP
 $labels['form.smtp.caption'] = 'SMTP';
 
-// Server host name
-$labels['form.smtp.host'] = 'Ime oz. naslov SMTP strežnika';
+// Outgoing mail server
+$labels['form.smtp.host'] = 'Strežnik odhodne pošte';
 
 // Security
 $labels['form.smtp.security'] = 'Varnost';
@@ -64,6 +70,15 @@ $labels['form.smtp.auth.imap'] = 'Tako kot IMAP';
 
 // None
 $labels['form.smtp.auth.none'] = 'Brez';
+
+// Custom
+$labels['form.smtp.auth.custom'] = 'Po meri';
+
+// Username
+$labels['form.smtp.username'] = 'Uporabniško ime';
+
+// Password
+$labels['form.smtp.password'] = 'Geslo';
 
 
 // Sieve
@@ -86,6 +101,15 @@ $labels['form.sieve.auth.imap'] = 'Tako kot IMAP';
 
 // None
 $labels['form.sieve.auth.none'] = 'Brez';
+
+// Custom
+$labels['form.sieve.auth.custom'] = 'Po meri';
+
+// Username
+$labels['form.sieve.username'] = 'Uporabniško ime';
+
+// Password
+$labels['form.sieve.password'] = 'Geslo';
 
 
 // Notifications
@@ -140,3 +164,12 @@ $labels['err.port.num'] = 'Vrednost \'Vrata\' mora biti številka.';
 
 // Value in \'Port\' field must be between 1 and 65535.
 $labels['err.port.range'] = 'Vrednost v polju \'Vrata\' mora biti med 1 in 65535.';
+
+// IMAP connection test failed.
+$labels['err.imap.connect'] = 'Povezava IMAP ni uspela. Preverite naslov strežnika, vrata in poverilnice.';
+
+// SMTP connection test failed.
+$labels['err.smtp.connect'] = 'Povezava SMTP ni uspela. Preverite naslov strežnika, vrata in poverilnice.';
+
+// Sieve connection test failed.
+$labels['err.sieve.connect'] = 'Povezava Sieve ni uspela. Preverite naslov strežnika, vrata in poverilnice.';

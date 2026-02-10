@@ -4,14 +4,20 @@
  */
 $labels = array();
 
-// Plugin ident_switch
-$labels['form.common.caption'] = 'Plugin ident_switch';
+// Separate Account
+$labels['form.caption'] = 'Afzonderlijk account';
+$labels['form.description'] = 'Configureer deze identiteit als een afzonderlijk account met eigen mailserververbindingen.';
+$labels['form.preconfig_only_warning'] = 'Configuratie als afzonderlijk account is niet beschikbaar voor het domein %s.';
+
+// General
+$labels['form.common.general'] = 'Algemeen';
 
 // Enabled
 $labels['form.common.enabled'] = 'Inschakelen';
 
 // Label
 $labels['form.common.label'] = 'Label';
+$labels['form.common.label.hint'] = 'Naam weergegeven in de accountkiezer. Indien leeg, wordt het e-mailadres gebruikt.';
 
 // Value in \'Label\' field is too long (32 chars max).
 $labels['err.label.long'] = 'De waarde in het veld \'Label\' is te lang (maximaal 32 karakter is toegestaan).';
@@ -20,8 +26,8 @@ $labels['err.label.long'] = 'De waarde in het veld \'Label\' is te lang (maximaa
 // IMAP
 $labels['form.imap.caption'] = 'IMAP';
 
-// Server host name
-$labels['form.imap.host'] = 'Servernaam';
+// Incoming mail server
+$labels['form.imap.host'] = 'Inkomende mailserver';
 
 // Security
 $labels['form.imap.security'] = 'Beveiliging';
@@ -47,8 +53,8 @@ $labels['err.user.long'] = 'De waarde in het veld \'Gebruikersnaam\' is te lang 
 // SMTP
 $labels['form.smtp.caption'] = 'SMTP';
 
-// Server host name
-$labels['form.smtp.host'] = 'Servernaam';
+// Outgoing mail server
+$labels['form.smtp.host'] = 'Uitgaande mailserver';
 
 // Security
 $labels['form.smtp.security'] = 'Beveiliging';
@@ -64,6 +70,15 @@ $labels['form.smtp.auth.imap'] = 'Zoals IMAP';
 
 // None
 $labels['form.smtp.auth.none'] = 'Geen';
+
+// Custom
+$labels['form.smtp.auth.custom'] = 'Aangepast';
+
+// Username
+$labels['form.smtp.username'] = 'Gebruikersnaam';
+
+// Password
+$labels['form.smtp.password'] = 'Wachtwoord';
 
 
 // Sieve
@@ -86,6 +101,15 @@ $labels['form.sieve.auth.imap'] = 'Zoals IMAP';
 
 // None
 $labels['form.sieve.auth.none'] = 'Geen';
+
+// Custom
+$labels['form.sieve.auth.custom'] = 'Aangepast';
+
+// Username
+$labels['form.sieve.username'] = 'Gebruikersnaam';
+
+// Password
+$labels['form.sieve.password'] = 'Wachtwoord';
 
 
 // Notifications
@@ -140,3 +164,12 @@ $labels['err.port.num'] = 'De waarde in het veld \'Poortnummer\' moet een nummer
 
 // Value in \'Port\' field must be between 1 and 65535.
 $labels['err.port.range'] = 'De waarde in het veld \'Poortnummer\' moet tussen de 1 en 65535 zijn.';
+
+// IMAP connection test failed.
+$labels['err.imap.connect'] = 'IMAP-verbinding mislukt. Controleer het serveradres, de poort en de inloggegevens.';
+
+// SMTP connection test failed.
+$labels['err.smtp.connect'] = 'SMTP-verbinding mislukt. Controleer het serveradres, de poort en de inloggegevens.';
+
+// Sieve connection test failed.
+$labels['err.sieve.connect'] = 'Sieve-verbinding mislukt. Controleer het serveradres, de poort en de inloggegevens.';

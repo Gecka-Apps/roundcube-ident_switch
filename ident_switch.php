@@ -42,11 +42,17 @@ class ident_switch extends rcube_plugin
 	/** @var int SMTP authentication: no authentication required. */
 	public const SMTP_AUTH_NONE = 2;
 
+	/** @var int SMTP authentication: use custom credentials. */
+	public const SMTP_AUTH_CUSTOM = 3;
+
 	/** @var int Sieve authentication: use same credentials as IMAP. */
 	public const SIEVE_AUTH_IMAP = 1;
 
 	/** @var int Sieve authentication: no authentication required. */
 	public const SIEVE_AUTH_NONE = 2;
+
+	/** @var int Sieve authentication: use custom credentials. */
+	public const SIEVE_AUTH_CUSTOM = 3;
 
 	/** @var int Notification checking: enabled. */
 	public const NOTIFY_CHECK_ENABLED = 1;
@@ -189,7 +195,7 @@ class ident_switch extends rcube_plugin
 		while ($r = $rc->db->fetch_assoc($qRec)) {
 			$accValues[] = $r['id'];
 			$iidMap[$r['iid']] = $r['id'];
-			if ($iid == $r['iid']) {
+			if ($iid === (int)$r['iid']) {
 				$accSelected = $r['id'];
 			}
 

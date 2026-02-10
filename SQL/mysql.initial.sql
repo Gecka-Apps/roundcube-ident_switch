@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS `ident_switch`
 		smallint
 		NOT NULL
 		DEFAULT 1,
+	`smtp_username`
+		varchar(64),
+	`smtp_password`
+		varchar(255),
 	`sieve_host`
 		varchar(64),
 	`sieve_port`
@@ -46,6 +50,10 @@ CREATE TABLE IF NOT EXISTS `ident_switch`
 		smallint
 		NOT NULL
 		DEFAULT 1,
+	`sieve_username`
+		varchar(64),
+	`sieve_password`
+		varchar(255),
 	`notify_check`
 		smallint
 		NOT NULL
@@ -58,9 +66,6 @@ CREATE TABLE IF NOT EXISTS `ident_switch`
 		DEFAULT NULL,
 	`notify_desktop`
 		smallint
-		DEFAULT NULL,
-	`notify_sound_url`
-		varchar(255)
 		DEFAULT NULL,
 	`drafts_mbox`
 		varchar(64),

@@ -29,15 +29,15 @@ class IdentSwitchSwitcher
 		$rc = rcmail::get_instance();
 
 		$my_postfix_len = strlen(ident_switch::MY_POSTFIX);
-		$identId = rcube_utils::get_input_value('_ident-id', rcube_utils::INPUT_POST);
+		$identId = (int)rcube_utils::get_input_value('_ident-id', rcube_utils::INPUT_POST);
 
 		$rc->session->remove('folders');
 		$rc->session->remove('unseen_count');
 
 		// Reset baseline for the target account so delta goes back to 0
-		$this->reset_baseline($identId == -1 ? 0 : null, $rc, $identId);
+		$this->reset_baseline($identId === -1 ? 0 : null, $rc, $identId);
 
-		if ($identId == -1) {
+		if ($identId === -1) {
 			// Switch to main account
 			ident_switch::write_log('Switching mailbox back to default.');
 
@@ -153,7 +153,7 @@ class IdentSwitchSwitcher
 	public function configure_smtp(array $args): array
 	{
 		$iid = $_SESSION['iid' . ident_switch::MY_POSTFIX] ?? null;
-		if (!is_numeric($iid) || $iid == -1) {
+		if (!is_numeric($iid) || (int)$iid === -1) {
 			ident_switch::write_log('no identity switch is selected... trying to find related smtp server from the from header');
 			$requestFrom = rcube_utils::get_input_value('_from', rcube_utils::INPUT_POST);
 			if (empty($requestFrom)) {
@@ -163,14 +163,14 @@ class IdentSwitchSwitcher
 
 			$iid = intval($requestFrom);
 			if ($iid === 0) {
-				ident_switch::write_log('falling back to original default config as _from post field is no integer: ' . $_POST['_from']);
+				ident_switch::write_log('falling back to original default config as _from post field is not an integer');
 				return $args;
 			}
 		}
 
 		$rc = rcmail::get_instance();
 
-		$sql = 'SELECT smtp_host, smtp_port, username, smtp_auth, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
+		$sql = 'SELECT smtp_host, smtp_port, username, smtp_auth, smtp_username, smtp_password, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
 		$q = $rc->db->query($sql, $iid, $rc->user->ID);
 		$r = $rc->db->fetch_assoc($q);
 		if (is_array($r)) {
@@ -182,8 +182,16 @@ class IdentSwitchSwitcher
 				$r['username'] = $rIid['email'];
 			}
 
-			$args['smtp_user'] = $r['username'];
-			$args['smtp_pass'] = $r['smtp_auth'] == ident_switch::SMTP_AUTH_IMAP ? $rc->decrypt($r['password']) : '';
+			if ((int)$r['smtp_auth'] === ident_switch::SMTP_AUTH_CUSTOM) {
+				$args['smtp_user'] = $r['smtp_username'] ?: '';
+				$args['smtp_pass'] = $r['smtp_password'] ? ($rc->decrypt($r['smtp_password']) ?: '') : '';
+			} elseif ((int)$r['smtp_auth'] === ident_switch::SMTP_AUTH_IMAP) {
+				$args['smtp_user'] = $r['username'];
+				$args['smtp_pass'] = $rc->decrypt($r['password']) ?: '';
+			} else {
+				$args['smtp_user'] = '';
+				$args['smtp_pass'] = '';
+			}
 
 			// Host already contains scheme (ssl:// or tls://) from form
 			$smtpHost = $r['smtp_host'] ?: 'localhost';
@@ -206,13 +214,13 @@ class IdentSwitchSwitcher
 	public function configure_managesieve(array $args): array
 	{
 		$iid = $_SESSION['iid' . ident_switch::MY_POSTFIX] ?? null;
-		if (!is_numeric($iid) || $iid == -1) {
+		if (!is_numeric($iid) || (int)$iid === -1) {
 			return $args;
 		}
 
 		$rc = rcmail::get_instance();
 
-		$sql = 'SELECT sieve_host, sieve_port, sieve_auth, username, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
+		$sql = 'SELECT sieve_host, sieve_port, sieve_auth, sieve_username, sieve_password, username, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
 		$q = $rc->db->query($sql, $iid, $rc->user->ID);
 		$r = $rc->db->fetch_assoc($q);
 		if (is_array($r) && !empty($r['sieve_host'])) {
@@ -227,9 +235,12 @@ class IdentSwitchSwitcher
 			$sievePort = $r['sieve_port'] ?: 4190;
 			$args['host'] = $sieveHost . ':' . $sievePort;
 
-			if ($r['sieve_auth'] == ident_switch::SIEVE_AUTH_IMAP) {
+			if ((int)$r['sieve_auth'] === ident_switch::SIEVE_AUTH_CUSTOM) {
+				$args['user'] = $r['sieve_username'] ?: '';
+				$args['password'] = $r['sieve_password'] ? ($rc->decrypt($r['sieve_password']) ?: '') : '';
+			} elseif ((int)$r['sieve_auth'] === ident_switch::SIEVE_AUTH_IMAP) {
 				$args['user'] = $r['username'];
-				$args['password'] = $rc->decrypt($r['password']);
+				$args['password'] = $rc->decrypt($r['password']) ?: '';
 			} else {
 				$args['user'] = '';
 				$args['password'] = '';
@@ -268,7 +279,7 @@ class IdentSwitchSwitcher
 			$sql = 'SELECT label FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
 			$q = $rc->db->query($sql, $_SESSION['iid' . ident_switch::MY_POSTFIX], $rc->user->ID);
 			$r = $rc->db->fetch_assoc($q);
-			$args['blocks']['main']['name'] .= ' (' . ($r['label'] ? rcube::Q($rc->gettext('server')) . ': ' . $r['label'] : 'remote') . ')';
+			$args['blocks']['main']['name'] .= ' (' . ($r['label'] ? rcube::Q($rc->gettext('server')) . ': ' . rcube::Q($r['label']) : 'remote') . ')';
 
 			foreach (rcube_storage::$folder_types as $type) {
 				if (isset($no_override[$type . '_mbox'])) {

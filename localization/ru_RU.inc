@@ -4,14 +4,20 @@
  */
 $labels = array();
 
-// Plugin ident_switch
-$labels['form.common.caption'] = 'Плагин ident_switch';
+// Separate Account
+$labels['form.caption'] = 'Отдельный аккаунт';
+$labels['form.description'] = 'Настройте эту учётную запись как отдельный аккаунт с собственными подключениями к почтовому серверу.';
+$labels['form.preconfig_only_warning'] = 'Настройка отдельного аккаунта недоступна для домена %s.';
+
+// General
+$labels['form.common.general'] = 'Общие';
 
 // Enabled
 $labels['form.common.enabled'] = 'Включено';
 
 // Label
 $labels['form.common.label'] = 'Название';
+$labels['form.common.label.hint'] = 'Имя, отображаемое в переключателе аккаунтов. Если пусто, используется адрес электронной почты.';
 
 // Value in \'Label\' field is too long (32 chars max).
 $labels['err.label.long'] = '\'Название\' должно быть не длинее 32 символов.';
@@ -20,8 +26,8 @@ $labels['err.label.long'] = '\'Название\' должно быть не д�
 // IMAP
 $labels['form.imap.caption'] = 'IMAP';
 
-// Server host name
-$labels['form.imap.host'] = 'Адрес сервера';
+// Incoming mail server
+$labels['form.imap.host'] = 'Сервер входящей почты';
 
 // Security
 $labels['form.imap.security'] = 'Безопасность';
@@ -47,8 +53,8 @@ $labels['err.user.long'] = '\'Имя пользователя\' должно б�
 // SMTP
 $labels['form.smtp.caption'] = 'SMTP';
 
-// Server host name
-$labels['form.smtp.host'] = 'Адрес сервера';
+// Outgoing mail server
+$labels['form.smtp.host'] = 'Сервер исходящей почты';
 
 // Security
 $labels['form.smtp.security'] = 'Безопасность';
@@ -64,6 +70,15 @@ $labels['form.smtp.auth.imap'] = 'Как IMAP';
 
 // None
 $labels['form.smtp.auth.none'] = 'Нет';
+
+// Custom
+$labels['form.smtp.auth.custom'] = 'Другие';
+
+// Username
+$labels['form.smtp.username'] = 'Имя пользователя';
+
+// Password
+$labels['form.smtp.password'] = 'Пароль';
 
 
 // Sieve
@@ -86,6 +101,15 @@ $labels['form.sieve.auth.imap'] = 'Как IMAP';
 
 // None
 $labels['form.sieve.auth.none'] = 'Нет';
+
+// Custom
+$labels['form.sieve.auth.custom'] = 'Другие';
+
+// Username
+$labels['form.sieve.username'] = 'Имя пользователя';
+
+// Password
+$labels['form.sieve.password'] = 'Пароль';
 
 
 // Notifications
@@ -140,3 +164,12 @@ $labels['err.port.num'] = '\'Порт\' должен быть числом.';
 
 // Value in \'Port\' field must be between 1 and 65535.
 $labels['err.port.range'] = '\'Порт\' должен быть в диапазоне от 1 до 65535.';
+
+// IMAP connection test failed.
+$labels['err.imap.connect'] = 'Ошибка подключения к IMAP. Проверьте адрес сервера, порт и учётные данные.';
+
+// SMTP connection test failed.
+$labels['err.smtp.connect'] = 'Ошибка подключения к SMTP. Проверьте адрес сервера, порт и учётные данные.';
+
+// Sieve connection test failed.
+$labels['err.sieve.connect'] = 'Ошибка подключения к Sieve. Проверьте адрес сервера, порт и учётные данные.';

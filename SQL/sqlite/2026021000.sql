@@ -1,3 +1,5 @@
+-- Upgrade from v4.x to v5.x
+-- SQLite: recreate table with all new columns
 PRAGMA foreign_keys=off;
 BEGIN TRANSACTION;
 
@@ -43,6 +45,36 @@ CREATE TABLE ident_switch
 		smallint
 		NOT NULL
 		DEFAULT 1,
+	smtp_username
+		varchar(64),
+	smtp_password
+		varchar(255),
+	sieve_host
+		varchar(64),
+	sieve_port
+		integer
+		CHECK(sieve_port > 0 AND sieve_port <= 65535),
+	sieve_auth
+		smallint
+		NOT NULL
+		DEFAULT 1,
+	sieve_username
+		varchar(64),
+	sieve_password
+		varchar(255),
+	notify_check
+		smallint
+		NOT NULL
+		DEFAULT 1,
+	notify_basic
+		smallint
+		DEFAULT NULL,
+	notify_sound
+		smallint
+		DEFAULT NULL,
+	notify_desktop
+		smallint
+		DEFAULT NULL,
 	drafts_mbox
 		varchar(64),
 	sent_mbox

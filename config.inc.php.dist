@@ -82,3 +82,13 @@ $config['ident_switch.round_robin'] = false;
  * Default: false (warning is displayed).
  */
 $config['ident_switch.hide_notifier_warning'] = false;
+
+/*
+ * Restrict account switching to preconfigured domains only.
+ * When enabled, the ident_switch form is hidden for identities whose email
+ * domain does not match any entry in 'ident_switch.preconfig'.
+ * Users can still create Roundcube identities (name, signature, etc.) but
+ * cannot configure server connections for non-preconfigured domains.
+ * Default: false (all domains allowed).
+ */
+$config['ident_switch.preconfig_only'] = false;

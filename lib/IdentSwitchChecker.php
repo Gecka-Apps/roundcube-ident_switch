@@ -31,9 +31,9 @@ class IdentSwitchChecker
 		$identities = $this->get_checkable_identities($rc);
 
 		// Exclude the currently active secondary identity (RC already checks it)
-		$activeIid = $_SESSION['iid' . ident_switch::MY_POSTFIX] ?? -1;
+		$activeIid = (int)($_SESSION['iid' . ident_switch::MY_POSTFIX] ?? -1);
 		$identities = array_values(array_filter($identities, function ($id) use ($activeIid) {
-			return $id['iid'] != $activeIid;
+			return (int)$id['iid'] !== $activeIid;
 		}));
 
 		// When impersonating, also check the primary account
@@ -132,6 +132,10 @@ class IdentSwitchChecker
 
 		$username = $identity['username'] ?: $identity['email'];
 		$password = $rc->decrypt($identity['password']);
+		if ($password === false) {
+			ident_switch::write_log("Failed to decrypt password for identity {$identity['iid']}");
+			return $previousCount;
+		}
 
 		$result = $imap->connect($host, $username, $password, [
 			'port' => $port,

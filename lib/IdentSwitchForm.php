@@ -29,12 +29,25 @@ class IdentSwitchForm
 	 * @param array $record Identity record data used for placeholders.
 	 * @return array Form field definitions for enabled, label, and readonly.
 	 */
-	public static function get_common_fields(array &$record): array
+	public function get_common_fields(array &$record): array
 	{
 		$prefix = 'ident_switch.form.common.';
+
+		$labelInput = new html_inputfield([
+			'name' => "_{$prefix}label",
+			'type' => 'text',
+			'size' => 32,
+			'placeholder' => $record['email'] ?? '',
+		]);
+		$labelHtml = $labelInput->show($record["{$prefix}label"] ?? '')
+			. html::span(
+				['class' => 'form-text'],
+				rcube::Q($this->plugin->gettext('form.common.label.hint'))
+			);
+
 		return [
 			$prefix . 'enabled' => ['type' => 'checkbox', 'onchange' => 'plugin_switchIdent_enabled_onChange();'],
-			$prefix . 'label' => ['type' => 'text', 'size' => 32, 'placeholder' => $record['email'] ?? ''],
+			$prefix . 'label' => ['value' => $labelHtml],
 			$prefix . 'readonly' => ['type' => 'hidden'],
 		];
 	}
@@ -53,7 +66,7 @@ class IdentSwitchForm
 			$prefix . 'security' => ['value' => $this->build_security_select($prefix, $record, 'ssl')],
 			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 993],
 			$prefix . 'username' => ['type' => 'text', 'size' => 64, 'placeholder' => $record['email'] ?? ''],
-			$prefix . 'password' => ['type' => 'password', 'size' => 64],
+			$prefix . 'password' => ['type' => 'password', 'size' => 64, 'autocomplete' => 'new-password'],
 			$prefix . 'delimiter' => ['value' => $this->build_delimiter_field($prefix, $record)],
 		];
 	}
@@ -71,12 +84,19 @@ class IdentSwitchForm
 		$authType = new html_select(['name' => "_{$prefix}auth"]);
 		$authType->add($this->plugin->gettext('form.smtp.auth.imap'), ident_switch::SMTP_AUTH_IMAP);
 		$authType->add($this->plugin->gettext('form.smtp.auth.none'), ident_switch::SMTP_AUTH_NONE);
+		$authType->add($this->plugin->gettext('form.smtp.auth.custom'), ident_switch::SMTP_AUTH_CUSTOM);
+
+		// Cast to int: html_select::show() uses strict comparison (===),
+		// option values are integers (constants), but POST/DB may return strings.
+		$authVal = isset($record[$prefix . 'auth']) ? (int)$record[$prefix . 'auth'] : null;
 
 		return [
 			$prefix . 'host' => ['type' => 'text', 'size' => 64, 'placeholder' => 'localhost'],
 			$prefix . 'security' => ['value' => $this->build_security_select($prefix, $record, 'tls')],
 			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 587],
-			$prefix . 'auth' => ['value' => $authType->show([$record['ident_switch.form.smtp.auth'] ?? null])],
+			$prefix . 'auth' => ['value' => $authType->show($authVal !== null ? [$authVal] : [])],
+			$prefix . 'username' => ['type' => 'text', 'size' => 64, 'autocomplete' => 'off'],
+			$prefix . 'password' => ['type' => 'password', 'size' => 64, 'autocomplete' => 'new-password'],
 		];
 	}
 
@@ -93,12 +113,18 @@ class IdentSwitchForm
 		$authType = new html_select(['name' => "_{$prefix}auth"]);
 		$authType->add($this->plugin->gettext('form.sieve.auth.imap'), ident_switch::SIEVE_AUTH_IMAP);
 		$authType->add($this->plugin->gettext('form.sieve.auth.none'), ident_switch::SIEVE_AUTH_NONE);
+		$authType->add($this->plugin->gettext('form.sieve.auth.custom'), ident_switch::SIEVE_AUTH_CUSTOM);
+
+		// Cast to int: html_select::show() uses strict comparison (===)
+		$authVal = isset($record[$prefix . 'auth']) ? (int)$record[$prefix . 'auth'] : null;
 
 		return [
 			$prefix . 'host' => ['type' => 'text', 'size' => 64, 'placeholder' => 'localhost'],
 			$prefix . 'security' => ['value' => $this->build_security_select($prefix, $record, 'tls')],
 			$prefix . 'port' => ['type' => 'text', 'size' => 5, 'placeholder' => 4190],
-			$prefix . 'auth' => ['value' => $authType->show([$record['ident_switch.form.sieve.auth'] ?? null])],
+			$prefix . 'auth' => ['value' => $authType->show($authVal !== null ? [$authVal] : [])],
+			$prefix . 'username' => ['type' => 'text', 'size' => 64, 'autocomplete' => 'off'],
+			$prefix . 'password' => ['type' => 'password', 'size' => 64, 'autocomplete' => 'new-password'],
 		];
 	}
 
@@ -195,6 +221,75 @@ class IdentSwitchForm
 	}
 
 	/**
+	 * Check if a domain is allowed for ident_switch configuration.
+	 *
+	 * When 'ident_switch.preconfig_only' is enabled, only domains with
+	 * a matching preconfig entry are allowed.
+	 *
+	 * @param string $email Email address to check.
+	 * @return bool True if allowed, false if blocked by preconfig_only.
+	 */
+	private function is_domain_allowed(string $email): bool
+	{
+		$rc = rcmail::get_instance();
+		if (!$rc->config->get('ident_switch.preconfig_only', false)) {
+			return true;
+		}
+		$preconfig = new IdentSwitchPreconfig($this->plugin);
+		return $preconfig->get($email) !== false;
+	}
+
+	/**
+	 * Pass preconfig data and settings to JS environment.
+	 *
+	 * Parses each domain's protocol URLs into host/security/port components
+	 * so the client can dynamically populate form fields on email change.
+	 *
+	 * @param rcmail $rc Roundcube instance.
+	 */
+	private function pass_preconfig_to_js(rcmail $rc): void
+	{
+		$this->plugin->load_config();
+		$allPreconfig = $rc->config->get('ident_switch.preconfig', []);
+		$preconfigOnly = $rc->config->get('ident_switch.preconfig_only', false);
+
+		$jsPreconfig = [];
+		foreach ($allPreconfig as $domain => $cfg) {
+			$entry = [];
+
+			$protocols = [
+				'imap' => $cfg['imap_host'] ?? $cfg['host'] ?? '',
+				'smtp' => $cfg['smtp_host'] ?? $cfg['host'] ?? '',
+				'sieve' => $cfg['sieve_host'] ?? '',
+			];
+
+			foreach ($protocols as $proto => $url) {
+				if (empty($url)) {
+					continue;
+				}
+				$urlArr = parse_url($url);
+				if (!is_array($urlArr)) {
+					continue;
+				}
+				$scheme = strtolower($urlArr['scheme'] ?? '');
+				$entry[$proto] = [
+					'host' => $urlArr['host'] ?? '',
+					'security' => in_array($scheme, ['ssl', 'tls']) ? $scheme : '',
+					'port' => !empty($urlArr['port']) ? intval($urlArr['port']) : '',
+				];
+			}
+
+			$entry['user'] = $cfg['user'] ?? '';
+			$entry['readonly'] = !empty($cfg['readonly']);
+			$jsPreconfig[$domain] = $entry;
+		}
+
+		$rc->output->set_env('ident_switch_preconfig', $jsPreconfig);
+		$rc->output->set_env('ident_switch_preconfig_only', $preconfigOnly);
+		$rc->output->set_env('ident_switch_warning_tpl', $this->plugin->gettext('form.preconfig_only_warning'));
+	}
+
+	/**
 	 * Parse scheme prefix from a host string.
 	 *
 	 * @param string $host Host string, optionally prefixed with ssl:// or tls://.
@@ -231,6 +326,158 @@ class IdentSwitchForm
 	}
 
 	/**
+	 * Restore plugin form field values from POST data after a save error.
+	 *
+	 * When the identity save is aborted (validation or connection error),
+	 * Roundcube re-renders the form. Core fields are preserved from POST by RC,
+	 * but plugin fields would revert to DB values without this restoration.
+	 *
+	 * @param array &$record Identity record to overlay POST values onto.
+	 */
+	private function restore_post_values(array &$record): void
+	{
+		// Text and select fields (trimmed)
+		$fields = [
+			['common', 'label'],
+			['imap', 'host'],
+			['imap', 'port'],
+			['imap', 'username'],
+			['imap', 'delimiter'],
+			['smtp', 'host'],
+			['smtp', 'port'],
+			['smtp', 'auth'],
+			['smtp', 'username'],
+			['sieve', 'host'],
+			['sieve', 'port'],
+			['sieve', 'auth'],
+			['sieve', 'username'],
+			['notify', 'basic'],
+			['notify', 'sound'],
+			['notify', 'desktop'],
+		];
+
+		foreach ($fields as [$section, $field]) {
+			$rawVal = self::get_field_value($section, $field, false);
+			if ($rawVal !== null) {
+				$record["ident_switch.form.{$section}.{$field}"] = self::get_field_value($section, $field);
+			}
+		}
+
+		// Security selects: empty string means "None", must not be trimmed to null
+		foreach (['imap', 'smtp', 'sieve'] as $proto) {
+			$rawVal = self::get_field_value($proto, 'security', false);
+			if ($rawVal !== null) {
+				$record["ident_switch.form.{$proto}.security"] = $rawVal;
+			}
+		}
+
+		// Password fields (raw, no trim)
+		foreach (['imap', 'smtp', 'sieve'] as $proto) {
+			$rawVal = self::get_field_value($proto, 'password', false, true);
+			if ($rawVal !== null) {
+				$record["ident_switch.form.{$proto}.password"] = $rawVal;
+			}
+		}
+
+		// Checkboxes: absent from POST means unchecked
+		$record['ident_switch.form.common.enabled'] = !empty(self::get_field_value('common', 'enabled', false));
+		$record['ident_switch.form.notify.check'] = !empty(self::get_field_value('notify', 'check', false));
+	}
+
+	/**
+	 * Test IMAP, SMTP, and Sieve connections using validated form data.
+	 *
+	 * @param array  $data     Validated data from validate().
+	 * @param string $email    Email address (fallback username).
+	 * @param string $imapPass Raw IMAP password (not encrypted).
+	 * @return string|null Error key on failure, null on success.
+	 */
+	private function test_connections(array $data, string $email, string $imapPass): ?string
+	{
+		$rc = rcmail::get_instance();
+
+		// --- IMAP test ---
+		$imapHostFull = $data['imap.host'] ?: 'localhost';
+		$parsed = self::parse_host_scheme($imapHostFull);
+		$imapHost = $parsed['host'];
+		$imapSsl = $parsed['scheme'] ?: null;
+		$imapDefPort = ($imapSsl === 'ssl') ? 993 : 143;
+		$imapPort = $data['imap.port'] ?: $imapDefPort;
+		$imapUser = $data['imap.user'] ?: $email;
+
+		$imap = new rcube_imap_generic();
+		$result = $imap->connect($imapHost, $imapUser, $imapPass, [
+			'port' => (int)$imapPort,
+			'ssl_mode' => $imapSsl,
+			'timeout' => 10,
+		]);
+		if (!$result) {
+			ident_switch::write_log("IMAP connection test failed: {$imap->error}");
+			return 'imap.connect';
+		}
+		$imap->closeConnection();
+
+		// --- SMTP test ---
+		$smtpAuth = (int)($data['smtp.auth'] ?? ident_switch::SMTP_AUTH_IMAP);
+		if ($smtpAuth !== ident_switch::SMTP_AUTH_NONE) {
+			$smtpHostFull = $data['smtp.host'] ?: 'localhost';
+			$smtpParsed = self::parse_host_scheme($smtpHostFull);
+			$smtpDefPort = ($smtpParsed['scheme'] === 'ssl') ? 465 : 587;
+			$smtpPort = $data['smtp.port'] ?: $smtpDefPort;
+			// Compose host with scheme for rcube_smtp (expects ssl://host:port or tls://host:port)
+			$smtpConnHost = self::compose_host_scheme($smtpParsed['host'], $smtpParsed['scheme'] ?: null);
+			$smtpConnHost .= ':' . $smtpPort;
+
+			if ($smtpAuth === ident_switch::SMTP_AUTH_CUSTOM) {
+				$smtpUser = $data['smtp.user'] ?: '';
+				$smtpPass = $data['smtp.pass'] ?: '';
+			} else {
+				$smtpUser = $imapUser;
+				$smtpPass = $imapPass;
+			}
+
+			$smtp = new rcube_smtp();
+			$result = $smtp->connect($smtpConnHost, null, $smtpUser, $smtpPass);
+			if (!$result) {
+				ident_switch::write_log("SMTP connection test failed");
+				return 'smtp.connect';
+			}
+			$smtp->disconnect();
+		}
+
+		// --- Sieve test (only if host is configured and auth is not None) ---
+		$sieveAuth = (int)($data['sieve.auth'] ?? ident_switch::SIEVE_AUTH_IMAP);
+		$sieveHostFull = $data['sieve.host'] ?? '';
+		if (!empty($sieveHostFull) && $sieveAuth !== ident_switch::SIEVE_AUTH_NONE) {
+			$sieveParsed = self::parse_host_scheme($sieveHostFull);
+			$sievePort = $data['sieve.port'] ?: 4190;
+			$useTls = ($sieveParsed['scheme'] === 'tls');
+			$sieveHost = $sieveParsed['host'];
+			if ($sieveParsed['scheme'] === 'ssl') {
+				$sieveHost = 'ssl://' . $sieveHost;
+			}
+
+			if ($sieveAuth === ident_switch::SIEVE_AUTH_CUSTOM) {
+				$sieveUser = $data['sieve.user'] ?: '';
+				$sievePass = $data['sieve.pass'] ?: '';
+			} else {
+				$sieveUser = $imapUser;
+				$sievePass = $imapPass;
+			}
+
+			if (class_exists('rcube_sieve')) {
+				$sieve = new rcube_sieve($sieveUser, $sievePass, $sieveHost, (int)$sievePort, null, $useTls);
+				if ($sieve->error()) {
+					ident_switch::write_log("Sieve connection test failed (error code: {$sieve->error()})");
+					return 'sieve.connect';
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Handle identity_form hook: add plugin-specific fields to the identity editor.
 	 *
 	 * Loads existing account data from the database (if editing) or applies
@@ -256,6 +503,42 @@ class IdentSwitchForm
 
 		$this->plugin->add_texts('localization');
 
+		// Build info section with description and domain warning
+		$preconfigOnly = $rc->config->get('ident_switch.preconfig_only', false);
+		$domainAllowed = empty($args['record']['email']) || $this->is_domain_allowed($args['record']['email']);
+
+		$warningVisible = $preconfigOnly && !$domainAllowed;
+
+		// Extract domain from email for warning message
+		$email = $args['record']['email'] ?? '';
+		$domain = '';
+		if (!empty($email) && str_contains($email, '@')) {
+			$domain = substr($email, strpos($email, '@') + 1);
+		}
+
+		$infoContent = html::div(
+			['class' => 'boxinformation', 'id' => 'ident-switch-info'],
+			rcube::Q($this->plugin->gettext('form.description'))
+		);
+		$warningContent = html::div(
+			['class' => 'boxwarning', 'id' => 'ident-switch-domain-warning',
+			 'style' => $warningVisible ? '' : 'display:none'],
+			rcube::Q(sprintf($this->plugin->gettext('form.preconfig_only_warning'), $domain))
+		);
+
+		$args['form']['ident_switch'] = [
+			'name' => $this->plugin->gettext('form.caption'),
+			'content' => $infoContent . $warningContent,
+		];
+
+		// Pass preconfig data to JS for dynamic form updates
+		$this->pass_preconfig_to_js($rc);
+
+		// When preconfig_only is enabled, hide field sections for non-preconfigured domains
+		if (!$domainAllowed) {
+			return $args;
+		}
+
 		$row = null;
 		if (isset($args['record']['identity_id'])) {
 			$sql = 'SELECT * FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
@@ -264,6 +547,9 @@ class IdentSwitchForm
 		}
 
 		$record = &$args['record'];
+
+		// Tell JS whether this identity has an existing ident_switch record
+		$rc->output->set_env('ident_switch_has_record', !empty($row));
 
 		// Load data if exists
 		if ($row) {
@@ -277,9 +563,13 @@ class IdentSwitchForm
 				'smtp_host' => 'smtp.host',
 				'smtp_port' => 'smtp.port',
 				'smtp_auth' => 'smtp.auth',
+				'smtp_username' => 'smtp.username',
+				'smtp_password' => 'smtp.password',
 				'sieve_host' => 'sieve.host',
 				'sieve_port' => 'sieve.port',
 				'sieve_auth' => 'sieve.auth',
+				'sieve_username' => 'sieve.username',
+				'sieve_password' => 'sieve.password',
 				'notify_check' => 'notify.check',
 				'notify_basic' => 'notify.basic',
 				'notify_sound' => 'notify.sound',
@@ -324,9 +614,14 @@ class IdentSwitchForm
 			$preconfig->apply($record);
 		}
 
+		// Restore POST values when form is re-displayed after a save error
+		if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+			$this->restore_post_values($record);
+		}
+
 		$args['form']['ident_switch.common'] = [
-			'name' => $this->plugin->gettext('form.common.caption'),
-			'content' => self::get_common_fields($record),
+			'name' => $this->plugin->gettext('form.common.general'),
+			'content' => $this->get_common_fields($record),
 		];
 		$args['form']['ident_switch.imap'] = [
 			'name' => $this->plugin->gettext('form.imap.caption'),
@@ -375,6 +670,12 @@ class IdentSwitchForm
 			return $args;
 		}
 
+		// Block save for non-preconfigured domains when preconfig_only is enabled
+		if (!$this->is_domain_allowed($args['record']['email'])) {
+			$this->disable($args['id']);
+			return $args;
+		}
+
 		if (!self::get_field_value('common', 'enabled', false)) {
 			$this->disable($args['id']);
 			return $args;
@@ -389,6 +690,16 @@ class IdentSwitchForm
 		}
 
 		$this->apply_readonly_preconfig($data, $args['record']['email']);
+
+		// Test connections before saving
+		$connErr = $this->test_connections($data, $args['record']['email'], $data['imap.pass']);
+		if ($connErr) {
+			$this->plugin->add_texts('localization');
+			$args['abort'] = true;
+			$args['message'] = 'ident_switch.err.' . $connErr;
+			return $args;
+		}
+
 		$data['id'] = $args['id'];
 		$this->save($rc, $data);
 
@@ -412,6 +723,11 @@ class IdentSwitchForm
 			return $args;
 		}
 
+		// Block creation for non-preconfigured domains when preconfig_only is enabled
+		if (!$this->is_domain_allowed($args['record']['email'])) {
+			return $args;
+		}
+
 		if (!self::get_field_value('common', 'enabled', false)) {
 			return $args;
 		}
@@ -421,9 +737,19 @@ class IdentSwitchForm
 			$this->plugin->add_texts('localization');
 			$args['abort'] = true;
 			$args['message'] = 'ident_switch.err.' . $data['err'];
+			return $args;
 		}
 
 		$this->apply_readonly_preconfig($data, $args['record']['email']);
+
+		// Test connections before saving
+		$connErr = $this->test_connections($data, $args['record']['email'], $data['imap.pass']);
+		if ($connErr) {
+			$this->plugin->add_texts('localization');
+			$args['abort'] = true;
+			$args['message'] = 'ident_switch.err.' . $connErr;
+			return $args;
+		}
 
 		// Save data for _after (cannot pass with $args)
 		$_SESSION['createData' . ident_switch::MY_POSTFIX] = $data;
@@ -541,7 +867,8 @@ class IdentSwitchForm
 		}
 
 		// Validate and compose IMAP host with security scheme
-		$retVal['imap.host'] = self::get_field_value('imap', 'host');
+		$imapBareHost = self::get_field_value('imap', 'host');
+		$retVal['imap.host'] = $imapBareHost;
 		$imapSecurity = self::get_field_value('imap', 'security') ?? '';
 		$retVal['imap.host'] = self::compose_host_scheme($retVal['imap.host'], $imapSecurity);
 		if (strlen($retVal['imap.host'] ?? '') > 64) {
@@ -576,8 +903,8 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
-		// Validate and compose SMTP host with security scheme
-		$retVal['smtp.host'] = self::get_field_value('smtp', 'host');
+		// Validate and compose SMTP host with security scheme (fallback to IMAP host)
+		$retVal['smtp.host'] = self::get_field_value('smtp', 'host') ?: $imapBareHost;
 		$smtpSecurity = self::get_field_value('smtp', 'security') ?? '';
 		$retVal['smtp.host'] = self::compose_host_scheme($retVal['smtp.host'], $smtpSecurity);
 		if (strlen($retVal['smtp.host'] ?? '') > 64) {
@@ -601,8 +928,21 @@ class IdentSwitchForm
 			return $retVal;
 		}
 
-		// Validate and compose Sieve host with security scheme
-		$retVal['sieve.host'] = self::get_field_value('sieve', 'host');
+		// Custom SMTP credentials
+		if ((int)$retVal['smtp.auth'] === ident_switch::SMTP_AUTH_CUSTOM) {
+			$retVal['smtp.user'] = self::get_field_value('smtp', 'username');
+			if (strlen($retVal['smtp.user'] ?? '') > 64) {
+				$retVal['err'] = 'user.long';
+				return $retVal;
+			}
+			$retVal['smtp.pass'] = self::get_field_value('smtp', 'password', false, true);
+		} else {
+			$retVal['smtp.user'] = null;
+			$retVal['smtp.pass'] = null;
+		}
+
+		// Validate and compose Sieve host with security scheme (fallback to IMAP host)
+		$retVal['sieve.host'] = self::get_field_value('sieve', 'host') ?: $imapBareHost;
 		$sieveSecurity = self::get_field_value('sieve', 'security') ?? '';
 		$retVal['sieve.host'] = self::compose_host_scheme($retVal['sieve.host'], $sieveSecurity);
 		if (strlen($retVal['sieve.host'] ?? '') > 64) {
@@ -624,6 +964,19 @@ class IdentSwitchForm
 		if (!ctype_digit($retVal['sieve.auth'] ?? '')) {
 			$retVal['err'] = 'auth.num';
 			return $retVal;
+		}
+
+		// Custom Sieve credentials
+		if ((int)$retVal['sieve.auth'] === ident_switch::SIEVE_AUTH_CUSTOM) {
+			$retVal['sieve.user'] = self::get_field_value('sieve', 'username');
+			if (strlen($retVal['sieve.user'] ?? '') > 64) {
+				$retVal['err'] = 'user.long';
+				return $retVal;
+			}
+			$retVal['sieve.pass'] = self::get_field_value('sieve', 'password', false, true);
+		} else {
+			$retVal['sieve.user'] = null;
+			$retVal['sieve.pass'] = null;
 		}
 
 		// Notification settings
@@ -682,7 +1035,7 @@ class IdentSwitchForm
 	 */
 	public function save(rcmail $rc, array $data): bool
 	{
-		$sql = 'SELECT id, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
+		$sql = 'SELECT id, password, smtp_password, sieve_password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
 		$q = $rc->db->query($sql, $data['id'], $rc->user->ID);
 		$r = $rc->db->fetch_assoc($q);
 		if ($r) {
@@ -690,7 +1043,8 @@ class IdentSwitchForm
 			$sql = 'UPDATE ' .
 				$rc->db->table_name(ident_switch::TABLE) .
 				' SET flags = ?, label = ?, imap_host = ?, imap_port = ?, imap_delimiter = ?, username = ?, password = ?,' .
-				' smtp_host = ?, smtp_port = ?, smtp_auth = ?, sieve_host = ?, sieve_port = ?, sieve_auth = ?,' .
+				' smtp_host = ?, smtp_port = ?, smtp_auth = ?, smtp_username = ?, smtp_password = ?,' .
+				' sieve_host = ?, sieve_port = ?, sieve_auth = ?, sieve_username = ?, sieve_password = ?,' .
 				' notify_check = ?, notify_basic = ?, notify_sound = ?, notify_desktop = ?,' .
 				' user_id = ?, iid = ?' .
 				' WHERE id = ?';
@@ -699,16 +1053,36 @@ class IdentSwitchForm
 			$sql = 'INSERT INTO ' .
 				$rc->db->table_name(ident_switch::TABLE) .
 				'(flags, label, imap_host, imap_port, imap_delimiter, username, password,' .
-				' smtp_host, smtp_port, smtp_auth, sieve_host, sieve_port, sieve_auth,' .
+				' smtp_host, smtp_port, smtp_auth, smtp_username, smtp_password,' .
+				' sieve_host, sieve_port, sieve_auth, sieve_username, sieve_password,' .
 				' notify_check, notify_basic, notify_sound, notify_desktop,' .
-				' user_id, iid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+				' user_id, iid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 		} else {
 			return false;
 		}
 
-		// Do we need to update pwd?
-		if ($data['imap.pass'] !== ($r['password'] ?? null)) {
+		// Encrypt IMAP password (compare raw POST value with decrypted DB value)
+		$existingImapPass = !empty($r['password']) ? $rc->decrypt($r['password']) : null;
+		if ($data['imap.pass'] === $existingImapPass && $existingImapPass !== false) {
+			$data['imap.pass'] = $r['password'];
+		} else {
 			$data['imap.pass'] = $rc->encrypt($data['imap.pass']);
+		}
+
+		// Encrypt SMTP password
+		$existingSmtpPass = !empty($r['smtp_password']) ? $rc->decrypt($r['smtp_password']) : null;
+		if ($data['smtp.pass'] === $existingSmtpPass && $existingSmtpPass !== false) {
+			$data['smtp.pass'] = $r['smtp_password'] ?? null;
+		} else {
+			$data['smtp.pass'] = $data['smtp.pass'] ? $rc->encrypt($data['smtp.pass']) : null;
+		}
+
+		// Encrypt Sieve password
+		$existingSievePass = !empty($r['sieve_password']) ? $rc->decrypt($r['sieve_password']) : null;
+		if ($data['sieve.pass'] === $existingSievePass && $existingSievePass !== false) {
+			$data['sieve.pass'] = $r['sieve_password'] ?? null;
+		} else {
+			$data['sieve.pass'] = $data['sieve.pass'] ? $rc->encrypt($data['sieve.pass']) : null;
 		}
 
 		$rc->db->query(
@@ -723,9 +1097,13 @@ class IdentSwitchForm
 			$data['smtp.host'],
 			$data['smtp.port'],
 			$data['smtp.auth'],
+			$data['smtp.user'],
+			$data['smtp.pass'],
 			$data['sieve.host'],
 			$data['sieve.port'],
 			$data['sieve.auth'],
+			$data['sieve.user'],
+			$data['sieve.pass'],
 			$data['notify.check'] ?? 1,
 			$data['notify.basic'] ?? null,
 			$data['notify.sound'] ?? null,
