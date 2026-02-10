@@ -190,7 +190,7 @@ class ident_switch extends rcube_plugin
 			. " FROM"
 			. " {$rc->db->table_name(self::TABLE)} isw"
 			. " INNER JOIN {$rc->db->table_name('identities')} ii ON isw.iid=ii.identity_id"
-			. " WHERE isw.user_id = ? AND isw.flags & ? > 0";
+			. " WHERE isw.user_id = ? AND isw.flags & ? > 0 AND isw.parent_id IS NULL";
 		$qRec = $rc->db->query($sql, $rc->user->data['user_id'], self::DB_ENABLED);
 		while ($r = $rc->db->fetch_assoc($qRec)) {
 			$accValues[] = $r['id'];
@@ -418,5 +418,17 @@ class ident_switch extends rcube_plugin
 	public static function write_log(string $txt): void
 	{
 		rcmail::get_instance()->write_log('ident_switch', $txt);
+	}
+
+	/**
+	 * Write a debug message (only when ident_switch.debug is enabled).
+	 *
+	 * @param string $txt Log message.
+	 */
+	public static function debug_log(string $txt): void
+	{
+		if (rcmail::get_instance()->config->get('ident_switch.debug', false)) {
+			rcmail::get_instance()->write_log('ident_switch', '[DEBUG] ' . $txt);
+		}
 	}
 }

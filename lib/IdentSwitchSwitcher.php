@@ -102,12 +102,13 @@ class IdentSwitchSwitcher
 				$hostLower = strtolower($host);
 				if (str_starts_with($hostLower, 'ssl://')) {
 					$ssl = 'ssl';
+					$host = substr($host, 6);
 				} elseif (str_starts_with($hostLower, 'tls://')) {
 					$ssl = 'tls';
+					$host = substr($host, 6);
 				} elseif ($r['flags'] & ident_switch::DB_SECURE_IMAP_TLS) {
 					// Backward compat: old records without scheme in host
 					$ssl = 'tls';
-					$host = 'tls://' . $host;
 				}
 
 				$def_port = ($ssl === 'ssl') ? 993 : 143;
@@ -154,26 +155,39 @@ class IdentSwitchSwitcher
 	{
 		$iid = $_SESSION['iid' . ident_switch::MY_POSTFIX] ?? null;
 		if (!is_numeric($iid) || (int)$iid === -1) {
-			ident_switch::write_log('no identity switch is selected... trying to find related smtp server from the from header');
+			ident_switch::debug_log('SMTP: no active switch, resolving from _from header');
 			$requestFrom = rcube_utils::get_input_value('_from', rcube_utils::INPUT_POST);
 			if (empty($requestFrom)) {
-				ident_switch::write_log('no _from post parameter found... falling back to original default config');
+				ident_switch::debug_log('SMTP: no _from parameter, using default config');
 				return $args;
 			}
 
 			$iid = intval($requestFrom);
 			if ($iid === 0) {
-				ident_switch::write_log('falling back to original default config as _from post field is not an integer');
+				ident_switch::debug_log('SMTP: _from is not an integer, using default config');
 				return $args;
 			}
 		}
 
 		$rc = rcmail::get_instance();
 
-		$sql = 'SELECT smtp_host, smtp_port, username, smtp_auth, smtp_username, smtp_password, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
+		$sql = 'SELECT parent_id, smtp_host, smtp_port, username, smtp_auth, smtp_username, smtp_password, password, iid FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
 		$q = $rc->db->query($sql, $iid, $rc->user->ID);
 		$r = $rc->db->fetch_assoc($q);
 		if (is_array($r)) {
+			// If this is an alias, follow parent_id to get the parent's SMTP config
+			if (!empty($r['parent_id'])) {
+				ident_switch::debug_log("SMTP: identity {$iid} is alias, following parent_id={$r['parent_id']}");
+				$sql = 'SELECT smtp_host, smtp_port, username, smtp_auth, smtp_username, smtp_password, password, iid FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE id = ? AND user_id = ?';
+				$q = $rc->db->query($sql, $r['parent_id'], $rc->user->ID);
+				$r = $rc->db->fetch_assoc($q);
+				if (!is_array($r)) {
+					ident_switch::debug_log("SMTP: parent account not found, using default config");
+					return $args;
+				}
+				$iid = $r['iid'];
+			}
+
 			if (!$r['username']) {
 				// Load email from identity
 				$sql = 'SELECT email FROM ' . $rc->db->table_name('identities') . ' WHERE identity_id = ?';
@@ -182,10 +196,11 @@ class IdentSwitchSwitcher
 				$r['username'] = $rIid['email'];
 			}
 
-			if ((int)$r['smtp_auth'] === ident_switch::SMTP_AUTH_CUSTOM) {
+			$authMode = (int)$r['smtp_auth'];
+			if ($authMode === ident_switch::SMTP_AUTH_CUSTOM) {
 				$args['smtp_user'] = $r['smtp_username'] ?: '';
 				$args['smtp_pass'] = $r['smtp_password'] ? ($rc->decrypt($r['smtp_password']) ?: '') : '';
-			} elseif ((int)$r['smtp_auth'] === ident_switch::SMTP_AUTH_IMAP) {
+			} elseif ($authMode === ident_switch::SMTP_AUTH_IMAP) {
 				$args['smtp_user'] = $r['username'];
 				$args['smtp_pass'] = $rc->decrypt($r['password']) ?: '';
 			} else {
@@ -197,6 +212,14 @@ class IdentSwitchSwitcher
 			$smtpHost = $r['smtp_host'] ?: 'localhost';
 			$smtpPort = $r['smtp_port'] ?: 587;
 			$args['smtp_host'] = $smtpHost . ':' . $smtpPort;
+
+			$authLabel = match ($authMode) {
+				ident_switch::SMTP_AUTH_IMAP => 'imap',
+				ident_switch::SMTP_AUTH_NONE => 'none',
+				ident_switch::SMTP_AUTH_CUSTOM => 'custom',
+				default => "unknown({$authMode})",
+			};
+			ident_switch::debug_log("SMTP: iid={$iid}, host={$args['smtp_host']}, user={$args['smtp_user']}, auth={$authLabel}");
 		}
 
 		return $args;
@@ -220,10 +243,27 @@ class IdentSwitchSwitcher
 
 		$rc = rcmail::get_instance();
 
-		$sql = 'SELECT sieve_host, sieve_port, sieve_auth, sieve_username, sieve_password, username, password FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
+		$sql = 'SELECT parent_id, sieve_host, sieve_port, sieve_auth, sieve_username, sieve_password, username, password, iid FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE iid = ? AND user_id = ?';
 		$q = $rc->db->query($sql, $iid, $rc->user->ID);
 		$r = $rc->db->fetch_assoc($q);
-		if (is_array($r) && !empty($r['sieve_host'])) {
+		if (is_array($r)) {
+			// If this is an alias, follow parent_id to get the parent's Sieve config
+			if (!empty($r['parent_id'])) {
+				ident_switch::debug_log("Sieve: identity {$iid} is alias, following parent_id={$r['parent_id']}");
+				$sql = 'SELECT sieve_host, sieve_port, sieve_auth, sieve_username, sieve_password, username, password, iid FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' WHERE id = ? AND user_id = ?';
+				$q = $rc->db->query($sql, $r['parent_id'], $rc->user->ID);
+				$r = $rc->db->fetch_assoc($q);
+				if (!is_array($r)) {
+					ident_switch::debug_log("Sieve: parent account not found, using default config");
+					return $args;
+				}
+				$iid = $r['iid'];
+			}
+
+			if (empty($r['sieve_host'])) {
+				return $args;
+			}
+
 			if (!$r['username']) {
 				$sql = 'SELECT email FROM ' . $rc->db->table_name('identities') . ' WHERE identity_id = ?';
 				$q = $rc->db->query($sql, $iid);
@@ -235,16 +275,19 @@ class IdentSwitchSwitcher
 			$sievePort = $r['sieve_port'] ?: 4190;
 			$args['host'] = $sieveHost . ':' . $sievePort;
 
-			if ((int)$r['sieve_auth'] === ident_switch::SIEVE_AUTH_CUSTOM) {
+			$authMode = (int)$r['sieve_auth'];
+			if ($authMode === ident_switch::SIEVE_AUTH_CUSTOM) {
 				$args['user'] = $r['sieve_username'] ?: '';
 				$args['password'] = $r['sieve_password'] ? ($rc->decrypt($r['sieve_password']) ?: '') : '';
-			} elseif ((int)$r['sieve_auth'] === ident_switch::SIEVE_AUTH_IMAP) {
+			} elseif ($authMode === ident_switch::SIEVE_AUTH_IMAP) {
 				$args['user'] = $r['username'];
 				$args['password'] = $rc->decrypt($r['password']) ?: '';
 			} else {
 				$args['user'] = '';
 				$args['password'] = '';
 			}
+
+			ident_switch::debug_log("Sieve: iid={$iid}, host={$args['host']}, user={$args['user']}");
 		}
 
 		return $args;

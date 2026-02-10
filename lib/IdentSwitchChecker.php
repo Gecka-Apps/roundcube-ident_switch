@@ -213,7 +213,7 @@ class IdentSwitchChecker
 			. 'ii.email '
 			. 'FROM ' . $rc->db->table_name(ident_switch::TABLE) . ' isw '
 			. 'INNER JOIN ' . $rc->db->table_name('identities') . ' ii ON isw.iid = ii.identity_id '
-			. 'WHERE isw.user_id = ? AND isw.flags & ? > 0 AND isw.notify_check = ?';
+			. 'WHERE isw.user_id = ? AND isw.flags & ? > 0 AND isw.notify_check = ? AND isw.parent_id IS NULL';
 
 		$q = $rc->db->query($sql, $rc->user->ID, ident_switch::DB_ENABLED, ident_switch::NOTIFY_CHECK_ENABLED);
 

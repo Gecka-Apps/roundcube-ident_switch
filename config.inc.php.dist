@@ -92,3 +92,10 @@ $config['ident_switch.hide_notifier_warning'] = false;
  * Default: false (all domains allowed).
  */
 $config['ident_switch.preconfig_only'] = false;
+
+/*
+ * Enable debug logging to logs/ident_switch.log.
+ * Useful for troubleshooting SMTP/Sieve routing and alias resolution.
+ * Default: false.
+ */
+$config['ident_switch.debug'] = false;
