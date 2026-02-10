@@ -50,7 +50,7 @@ class IdentSwitchSwitcher
 				}
 			}
 
-			$_SESSION['imap_delimiter'] = $_SESSION['imap_delimiter' . ident_switch::MY_POSTFIX] ?? '.';
+			$_SESSION['imap_delimiter'] = $_SESSION['imap_delimiter' . ident_switch::MY_POSTFIX] ?? null;
 			$_SESSION['username'] = $rc->user->data['username'];
 			$_SESSION['password'] = $_SESSION['password' . ident_switch::MY_POSTFIX];
 			$_SESSION['iid' . ident_switch::MY_POSTFIX] = -1;
@@ -107,7 +107,7 @@ class IdentSwitchSwitcher
 					$host = "{$ssl}://" . $host;
 				}
 
-				$delimiter = $r['imap_delimiter'] ?: '.';
+				$delimiter = $r['imap_delimiter'] ?: null;
 
 				$_SESSION['storage_host'] = $host;
 				$_SESSION['storage_ssl'] = $ssl;

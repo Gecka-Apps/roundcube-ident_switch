@@ -54,7 +54,7 @@ class IdentSwitchForm
 			$prefix . 'tls' => ['type' => 'checkbox'],
 			$prefix . 'username' => ['type' => 'text', 'size' => 64, 'placeholder' => $record['email'] ?? ''],
 			$prefix . 'password' => ['type' => 'password', 'size' => 64],
-			$prefix . 'delimiter' => ['type' => 'text', 'size' => 1, 'placeholder' => '.'],
+			$prefix . 'delimiter' => ['type' => 'text', 'size' => 1, 'placeholder' => 'Auto'],
 		];
 	}
 
