@@ -176,3 +176,6 @@ $labels['err.smtp.connect'] = 'SMTP-verbinding mislukt. Controleer het serveradr
 
 // Sieve connection test failed.
 $labels['err.sieve.connect'] = 'Sieve-verbinding mislukt. Controleer het serveradres, de poort en de inloggegevens.';
+
+// Saving account settings to the database failed.
+$labels['err.save'] = 'Het opslaan van de accountinstellingen is mislukt (databasefout). Neem contact op met uw beheerder.';

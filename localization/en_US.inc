@@ -170,3 +170,6 @@ $labels['err.smtp.connect'] = 'SMTP connection failed. Please check the server a
 
 // Sieve connection test failed.
 $labels['err.sieve.connect'] = 'Sieve connection failed. Please check the server address, port, and credentials.';
+
+// Saving account settings to the database failed.
+$labels['err.save'] = 'Saving account settings failed (database error). Please contact your administrator.';

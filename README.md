@@ -166,8 +166,12 @@ If you are upgrading from `boressoft/ident_switch`, `toteph42/identity_switch`, 
 
 ### With Composer
 
-1. Replace the old package in `composer.json` with `gecka/ident-switch` and run `composer update`
-2. Database migrations are applied automatically
+1. Replace the old package in `composer.json` with `gecka/ident-switch`
+2. Run `SKIP_DB_INIT=1 composer update`. Composer sees the fork as a brand-new package, so without that variable the plugin installer runs the *initial* schema script instead of the migrations and aborts on the existing v4 table ("table already exists").
+3. Run the database migration:
+   ```bash
+   bin/updatedb.sh --package=ident_switch --dir=plugins/ident_switch/SQL
+   ```
 
 ### Manual
 
@@ -176,6 +180,23 @@ If you are upgrading from `boressoft/ident_switch`, `toteph42/identity_switch`, 
    ```bash
    bin/updatedb.sh --package=ident_switch --dir=plugins/ident_switch/SQL
    ```
+
+### Repairing a v4 table wrongly marked as migrated
+
+Versions of this fork up to 5.0.x shipped a MySQL initial schema using `CREATE TABLE IF NOT EXISTS`: on an upgrade from v4 the table creation was silently skipped while the schema version was still recorded as current. `updatedb.sh` then reports nothing to do, saves fail silently, and the account switcher never shows up. The plugin now detects this and logs `Plugin disabled: database schema is missing or outdated` to `logs/ident_switch`; `logs/errors.log` on affected versions fills with `Unknown column 'isw.notify_basic'` errors.
+
+To confirm and repair (MySQL shown, adapt the path for PostgreSQL/SQLite):
+
+```sql
+-- Empty result while system.ident_switch-version says 2026021000 confirms the problem
+SHOW COLUMNS FROM ident_switch LIKE 'parent_id';
+
+-- The migration adds UNIQUE(iid); remove any duplicate iid rows first
+SELECT iid, COUNT(*) FROM ident_switch GROUP BY iid HAVING COUNT(*) > 1;
+
+-- Apply the migration manually (the recorded version prevents updatedb.sh from doing it)
+SOURCE plugins/ident_switch/SQL/mysql/2026021000.sql;
+```
 
 ### Configuration
 

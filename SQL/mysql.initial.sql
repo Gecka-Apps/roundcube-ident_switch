@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `ident_switch`
+CREATE TABLE `ident_switch`
 (
 	`id`
 		int UNSIGNED

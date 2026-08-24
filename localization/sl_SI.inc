@@ -176,3 +176,6 @@ $labels['err.smtp.connect'] = 'Povezava SMTP ni uspela. Preverite naslov strežn
 
 // Sieve connection test failed.
 $labels['err.sieve.connect'] = 'Povezava Sieve ni uspela. Preverite naslov strežnika, vrata in poverilnice.';
+
+// Saving account settings to the database failed.
+$labels['err.save'] = 'Shranjevanje nastavitev računa ni uspelo (napaka baze podatkov). Obrnite se na skrbnika.';

@@ -176,3 +176,6 @@ $labels['err.smtp.connect'] = 'Ошибка подключения к SMTP. Пр
 
 // Sieve connection test failed.
 $labels['err.sieve.connect'] = 'Ошибка подключения к Sieve. Проверьте адрес сервера, порт и учётные данные.';
+
+// Saving account settings to the database failed.
+$labels['err.save'] = 'Не удалось сохранить настройки учётной записи (ошибка базы данных). Обратитесь к администратору.';

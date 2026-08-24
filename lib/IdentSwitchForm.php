@@ -772,7 +772,12 @@ class IdentSwitchForm
 
         if (str_starts_with($mode, 'alias:')) {
             $parentId = (int)substr($mode, 6);
-            $this->save_alias($args['id'], $parentId);
+            if (!$this->save_alias($args['id'], $parentId)) {
+                $this->plugin->add_texts('localization');
+                $args['abort'] = true;
+                $args['result'] = false;
+                $args['message'] = 'ident_switch.err.save';
+            }
             return $args;
         }
 
@@ -802,7 +807,12 @@ class IdentSwitchForm
         }
 
         $data['id'] = $args['id'];
-        $this->save($rc, $data);
+        if (!$this->save($rc, $data)) {
+            $this->plugin->add_texts('localization');
+            $args['abort'] = true;
+            $args['result'] = false;
+            $args['message'] = 'ident_switch.err.save';
+        }
 
         return $args;
     }
@@ -896,13 +906,21 @@ class IdentSwitchForm
         $data = $_SESSION['createData' . ident_switch::MY_POSTFIX] ?? null;
 
         unset($_SESSION['createData' . ident_switch::MY_POSTFIX]);
+        $saved = true;
         if (!$data || count($data) === 0) {
             ident_switch::write_log("Object with ident_switch values not found in session for ID = {$args['id']}.");
         } elseif (($data['mode'] ?? '') === 'alias') {
-            $this->save_alias($args['id'], $data['parent_id']);
+            $saved = $this->save_alias($args['id'], $data['parent_id']);
         } else {
             $data['id'] = $args['id'];
-            $this->save($rc, $data);
+            $saved = $this->save($rc, $data);
+        }
+
+        // The identity already exists at this point, so the save cannot be
+        // aborted; surface the error instead of the default success message.
+        if (!$saved) {
+            $this->plugin->add_texts('localization');
+            $rc->output->show_message('ident_switch.err.save', 'error');
         }
 
         return $args;
@@ -1191,7 +1209,7 @@ class IdentSwitchForm
      *
      * @param rcmail $rc   Roundcube instance for DB access and encryption.
      * @param array  $data Validated field data including 'id' (identity_id).
-     * @return boolean True if a query was executed, false otherwise.
+     * @return boolean True on success, false when nothing was saved or the query failed.
      */
     public function save(rcmail $rc, array $data): bool
     {
@@ -1242,7 +1260,7 @@ class IdentSwitchForm
             $data['sieve.pass'] = $data['sieve.pass'] ? $rc->encrypt($data['sieve.pass']) : null;
         }
 
-        $rc->db->query(
+        $q = $rc->db->query(
             $sql,
             $data['flags'],
             null, // parent_id: NULL for separate accounts
@@ -1271,6 +1289,13 @@ class IdentSwitchForm
             $r['id'] ?? null
         );
 
+        if (!$q) {
+            ident_switch::write_log(
+                "Failed to save account data for identity {$data['id']}: " . $rc->db->is_error()
+            );
+            return false;
+        }
+
         return true;
     }
 
@@ -1282,8 +1307,9 @@ class IdentSwitchForm
      *
      * @param integer $iid      Identity ID of the alias.
      * @param integer $parentId Ident_switch.id of the parent account.
+     * @return boolean True on success, false when the parent is invalid or the query failed.
      */
-    private function save_alias(int $iid, int $parentId): void
+    private function save_alias(int $iid, int $parentId): bool
     {
         $rc = rcmail::get_instance();
 
@@ -1293,7 +1319,7 @@ class IdentSwitchForm
         $q = $rc->db->query($sql, $parentId, $rc->user->ID);
         if (!$rc->db->fetch_assoc($q)) {
             ident_switch::write_log("Alias save: parent account with id={$parentId} not found for user.");
-            return;
+            return false;
         }
 
         $label = self::get_field_value('common', 'label');
@@ -1312,14 +1338,22 @@ class IdentSwitchForm
                 . ' sieve_host = NULL, sieve_port = NULL, sieve_auth = 1, sieve_username = NULL, sieve_password = NULL,'
                 . ' notify_check = 0, notify_basic = NULL, notify_sound = NULL, notify_desktop = NULL'
                 . ' WHERE id = ?';
-            $rc->db->query($sql, ident_switch::DB_ENABLED, $parentId, $label, $r['id']);
+            $q = $rc->db->query($sql, ident_switch::DB_ENABLED, $parentId, $label, $r['id']);
         } else {
             $sql = 'INSERT INTO ' . $rc->db->table_name(ident_switch::TABLE)
                 . ' (flags, parent_id, label, user_id, iid) VALUES (?, ?, ?, ?, ?)';
-            $rc->db->query($sql, ident_switch::DB_ENABLED, $parentId, $label, $rc->user->ID, $iid);
+            $q = $rc->db->query($sql, ident_switch::DB_ENABLED, $parentId, $label, $rc->user->ID, $iid);
+        }
+
+        if (!$q) {
+            ident_switch::write_log(
+                "Failed to save alias link for identity {$iid}: " . $rc->db->is_error()
+            );
+            return false;
         }
 
         ident_switch::write_log("Saved alias link: identity {$iid} → parent account {$parentId}.");
+        return true;
     }
 
     /**

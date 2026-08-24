@@ -176,3 +176,6 @@ $labels['err.smtp.connect'] = 'SMTP-Verbindung fehlgeschlagen. Bitte überprüfe
 
 // Sieve connection test failed.
 $labels['err.sieve.connect'] = 'Sieve-Verbindung fehlgeschlagen. Bitte überprüfen Sie Serveradresse, Port und Zugangsdaten.';
+
+// Saving account settings to the database failed.
+$labels['err.save'] = 'Das Speichern der Kontoeinstellungen ist fehlgeschlagen (Datenbankfehler). Bitte kontaktieren Sie Ihren Administrator.';

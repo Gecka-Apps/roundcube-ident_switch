@@ -169,3 +169,6 @@ $labels['err.smtp.connect'] = 'La connexion SMTP a échoué. Vérifiez l\'adress
 
 // Sieve connection test failed.
 $labels['err.sieve.connect'] = 'La connexion Sieve a échoué. Vérifiez l\'adresse du serveur, le port et les identifiants.';
+
+// Saving account settings to the database failed.
+$labels['err.save'] = 'L\'enregistrement des paramètres du compte a échoué (erreur de base de données). Contactez votre administrateur.';

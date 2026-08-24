@@ -79,6 +79,10 @@ class ident_switch extends rcube_plugin
      */
     public function init(): void
     {
+        if (!$this->schema_is_current()) {
+            return;
+        }
+
         $this->form = new IdentSwitchForm($this);
         $this->switcher = new IdentSwitchSwitcher();
         $this->preconfig = new IdentSwitchPreconfig($this);
@@ -109,6 +113,41 @@ class ident_switch extends rcube_plugin
                 $_SESSION[$key] = $rc->config->get($type . '_mbox');
             }
         }
+    }
+
+    /**
+     * Check that the plugin's database table matches the current schema.
+     *
+     * Probes a sentinel column with a no-op SELECT: an outdated table makes
+     * every query of this version fail, so the plugin stays fully inactive
+     * until the migration is applied. The sentinel must be a column added by
+     * the latest migration. Only a positive verdict is cached in the session,
+     * so applying the migration takes effect on the next request.
+     *
+     * @return boolean True when the schema is usable.
+     */
+    private function schema_is_current(): bool
+    {
+        $key = 'schema_ok' . self::MY_POSTFIX;
+        if (!empty($_SESSION[$key])) {
+            return true;
+        }
+
+        $db = rcmail::get_instance()->db;
+        $db->set_option('ignore_errors', true);
+        $q = $db->query('SELECT parent_id FROM ' . $db->table_name(self::TABLE, true) . ' WHERE 1=0');
+        $db->set_option('ignore_errors', false);
+
+        if (!$q) {
+            self::write_log(
+                'Plugin disabled: database schema is missing or outdated.'
+                . ' Run: bin/updatedb.sh --package=ident_switch --dir=plugins/ident_switch/SQL'
+            );
+            return false;
+        }
+
+        $_SESSION[$key] = true;
+        return true;
     }
 
     /**
