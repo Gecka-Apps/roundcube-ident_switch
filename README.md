@@ -5,7 +5,7 @@
 [![PHP Lint](https://github.com/Gecka-Apps/roundcube-ident_switch/actions/workflows/php-lint.yml/badge.svg)](https://github.com/Gecka-Apps/roundcube-ident_switch/actions/workflows/php-lint.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4)](https://www.php.net)
-[![Roundcube](https://img.shields.io/badge/Roundcube-1.6+-37BEFF)](https://roundcube.net)
+[![Roundcube](https://img.shields.io/badge/Roundcube-1.6--1.7-37BEFF)](https://roundcube.net)
 
 Switch between multiple IMAP accounts within a single Roundcube session.
 
@@ -61,7 +61,7 @@ Switch between multiple IMAP accounts within a single Roundcube session.
 ## Requirements
 
 - PHP 8.2+
-- Roundcube 1.6+
+- Roundcube 1.6 or 1.7
 - MySQL, PostgreSQL, or SQLite
 
 ## Installation
@@ -210,9 +210,9 @@ Available in 7 languages: English, French, German, Italian, Dutch, Russian, Slov
 
 | Version | Roundcube | PHP |
 |---------|-----------|-----|
-| 5.x | 1.6+ | 8.2+ |
-| 4.x | 1.3 — 1.5 | 7.x — 8.1 |
-| 1.x — 3.x | 1.1 — 1.3 | *discontinued* |
+| 5.x | 1.6 - 1.7 | 8.2+ |
+| 4.x | 1.3 - 1.5 | 7.x - 8.1 |
+| 1.x - 3.x | 1.1 - 1.3 | *discontinued* |
 
 ## License
 
